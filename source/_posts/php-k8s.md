@@ -16,14 +16,14 @@ tags:
 ## PHP 开启 huge_code_pages 报错解决方式
 PHP 开启 opcache.huge_code_pages=1 后，运行时报错：Zend OPcache huge_code_pages: mmap(HUGETLB) failed: Cannot allocate memory (12)
 
-### 问题原因：
+### 问题原因
 系统 Hugepage 不足，CentOS 系统中 Hugepage 是没有默认开启的，可以通过下面命令查看，可见 HugePages_Total 是 0
 ```shell
 cat /proc/meminfo | grep Huge
 ```
 ![meminfo](meminfo.png)
 
-### 解决步骤：
+### 解决步骤
 **(1) 开启宿主机 Hugepage**
 
 /etc/sysctl.conf 添加配置 `vm.nr_hugepages = 512`，保存退出，执行 sysctl -p 使配置生效，再次执行 cat /proc/meminfo | grep Huge 查看已分配 HugePages_Total 为 512。
@@ -62,7 +62,7 @@ systemctl restart kubelet
 需注意，一方面对于 PHP-FPM 应用，分配内存不宜过小。实测当分配 100M 但 FPM 启动多达 200 个进程时会由于内存不足频繁报错 child exited on signal 9 (SIGKILL) after xxx seconds from start。
 另一方面，所有需要使用 hugepage 的应用 **分配并独占** 宿主机相应大小的 hugepage 空间，如果一个 Deployment 已分配了全部的 1024M 内存，另一个也需要 hugepage 的 Deployment 会处于 Pending 状态而不会启动成功。
 
-### 参考资料：
+### 参考资料
 
  - https://juejin.im/entry/5bd9d4786fb9a0228b409420
  - https://v1-14.docs.kubernetes.io/docs/tasks/manage-hugepages/scheduling-hugepages/
@@ -124,3 +124,48 @@ privileged 配置禁止从容器内访问宿主机任何设备（默认配置）
 根据官方文档的 yaml 文件，如果不希望使用 root 用户启动，推荐配置 privileged 和 allowPrivilegeEscalation 都为 false。
 
 参考 Kubernetes 官方文档 “[Pod 安全策略](https://kubernetes.io/docs/concepts/policy/pod-security-policy/#example-policies)” 一节中的示例。
+
+## Node 节点服务器启动时，NAS 盘挂载晚于 Pods 创建
+K8S 集群新节点服务器启动时，NAS盘在 /etc/rc.local 中通过 mount 命令挂载，在未完成挂载时 Pods 已经创建，导致 NAS 盘无法挂载进 Pods。
+解决方式：非本地盘建议通过 PV/PVC 方式挂载，避免使用 hostPath 方式挂载。
+```yaml
+- name: img-dir
+  flexVolume:
+	driver: "alicloud/nas"
+	options:
+	  server: "xxxxx.cn-beijing.nas.aliyuncs.com"
+	  path: "/img/img2"
+	  vers: "3"
+```
+若使用阿里云可以参考：https://help.aliyun.com/document_detail/86784.html
+
+## 解决 Node 节点上最多 110 个 Pods 的限制
+在需要修改的 Node 节点修改 kubelet 配置，vi /etc/sysconfig/kubelet 修改 KUBELET_EXTRA_ARGS="--max-pods=1100"
+修改后重启kubelet使参数生效：
+```
+systemctl daemon-reload
+systemctl restart kubelet
+```
+未作修改时 kubectl describe node 查看到的 Pods 数量：
+![pods-1](pods-1.png)查看修改后的 Pods 数量：
+![pods-2](pods-2.png)需要注意，此时最大 Pods 数量限制得以放松，但是仍然存在每个 Node 上的 Pods 地址范围限制。
+默认每个 Node 的 Pods 地址范围是 C 类地址，如果这些 Pods 需要暴露 IP，那么每个节点仍不能部署超过约 255 个 Pods。
+修改 PodCIDR 需要重建集群，具体操作后续将在其他文章中说明。
+
+说明：如何找到 /etc/sysconfig/kubelet 文件的：
+(1) 查看 kubelet 状态：systemctl status kubelet
+(2) 找到服务加载的配置文件：/usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf
+![systemctl-status](systemctl-status.png)(3) 在 10-kubeadm.conf 里找到服务启动命令：
+ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS
+![kubeadm-conf](kubelet-kubeadm-conf.png)结合注释可知，KUBELET_EXTRA_ARGS 参数来自于 /etc/sysconfig/kubelet 文件，并且会覆盖默认启动参数，故在该文件添加 KUBELET_EXTRA_ARGS="--max-pods=1100" 即可。
+
+## Nginx 获取客户端真实 IP
+在使用 NodePort 方式暴露的 web 服务的 nginx 日志中，remote_addr 字段无法正确取得来源 IP。
+这个IP地址应该是 flannel cni0 的 IP 地址，Loadbalancer 或者 NodePort 在经过主机转发时会 SNAT 成 cni0 的 IP 地址。
+
+通过设置 service.spec.externalTrafficPolicy 字段为 Local 使数据包只转发到本机，则真实来源 IP 地址会被保留，但是这样也失去了优雅重启特性。
+可以考虑 Service 采用 Loadbalancer 方式暴露，并在上层接入能够自动监测 Pods 状态的负载均衡器，在 Pods 停止时及时摘除对于节点的服务。
+![loadbalancer](loadbalancer.png)
+
+参考：
+https://kubernetes.io/zh/docs/tutorials/services/source-ip/
