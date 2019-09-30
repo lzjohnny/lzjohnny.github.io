@@ -112,7 +112,7 @@ kubectl apply -f kube-flannel.yml
 这三处掩码长度必须保持一致，且前两处 IP 必须相同，且为第三处网段的第一个可用 IP。
 所有节点都必须符合这个规律，如果哪个节点有误就重新 kubeadm reset 哪个节点，按前面步骤完整清除配置重建即可。
 
-如果 flannel 和 coredns 启动没有问题，继续检查 Pods 地址范围是否修改成。
+如果 flannel 和 coredns 启动没有问题，继续检查 Pods 地址范围是否修改成功。
 本次重建集群的目的是缩短 PodCIDR 子网掩码长度，以便在同一个 node 上部署超过 256 个服务，执行：
 kubectl describe node al-bj2c-dev.k8smaster-1 | grep -i podcidr
 可见 PodCIDR: 10.244.0.0/20，由默认的 24 位掩码已缩短为 20 位。
