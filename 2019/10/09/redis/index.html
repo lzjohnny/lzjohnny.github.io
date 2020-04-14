@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+
+
+
+
+<html class="theme-next pisces" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link href="https://cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+
+    
+  
+
+  
+    
+    
+    <link href="//fonts.cat.net/css?family=Sigmar One:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+  
+
+<link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.css" rel="stylesheet" type="text/css">
+
+
+
+  
+
+<link href="https://cdn.bootcss.com/social-share.js/1.0.9/css/share.min.css" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=0.0.5" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=0.0.5">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico?v=0.0.5">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=0.0.5" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="blog,php,back-end">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Redis 分布式锁redis 官方文档中已经很好的说明了分布式锁的实现方式，这里仅会对官方文档做一些补充。 setnx 实现https://redis.io/commands/setnx 注意 setnx 命令没有过期时间参数，其他语言，如 PHP 客户端中的过期时间参数实际为 setnx 和 expire 命令的组合，无法实现原子操作。 利用 setnx 正确获取锁的流程，检查到锁已过期后，不">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis 技术专题">
+<meta property="og:url" content="http://yoursite.com/2019/10/09/redis/index.html">
+<meta property="og:site_name" content="Hi, Onigiri">
+<meta property="og:description" content="Redis 分布式锁redis 官方文档中已经很好的说明了分布式锁的实现方式，这里仅会对官方文档做一些补充。 setnx 实现https://redis.io/commands/setnx 注意 setnx 命令没有过期时间参数，其他语言，如 PHP 客户端中的过期时间参数实际为 setnx 和 expire 命令的组合，无法实现原子操作。 利用 setnx 正确获取锁的流程，检查到锁已过期后，不">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://yoursite.com/2019/10/09/redis/redis-lock-1.png">
+<meta property="og:image" content="http://yoursite.com/2019/10/09/redis/redis-lock-2.png">
+<meta property="og:updated_time" content="2020-04-14T16:21:41.362Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Redis 技术专题">
+<meta name="twitter:description" content="Redis 分布式锁redis 官方文档中已经很好的说明了分布式锁的实现方式，这里仅会对官方文档做一些补充。 setnx 实现https://redis.io/commands/setnx 注意 setnx 命令没有过期时间参数，其他语言，如 PHP 客户端中的过期时间参数实际为 setnx 和 expire 命令的组合，无法实现原子操作。 利用 setnx 正确获取锁的流程，检查到锁已过期后，不">
+<meta name="twitter:image" content="http://yoursite.com/2019/10/09/redis/redis-lock-1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '0.0.5',
+    sidebar: {"position":"right","display":"always","offset":52,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    since: '1/20/2019 11:30:00',
+    onlineAPI: '',
+    googleAnalytics: '',
+    site: {
+      title: 'Hi, Onigiri',
+      subtitle: '',
+      author: 'John Doe'
+    },
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    leancloud: {
+      enable: false,
+      appID: '',
+      appKey: ''
+    },
+    favicon: {
+      visibilitychange: false,
+      narmal: '/images/favicon.ico',
+      hidden: '/images/failure.ico',
+      show_text: '(/≧▽≦/)咦！又好了！',
+      hide_text: '(●—●)喔哟，崩溃啦！'
+    }
+  };
+</script>
+
+
+
+  
+    <script type="text/javascript" src="https://cdn.bootcss.com/jquery/2.1.3/jquery.min.js"></script>
+
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/10/09/redis/">
+
+
+
+
+
+  <title>Redis 技术专题 | Hi, Onigiri</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-mars"></i> <br>
+            
+            链接
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-rocket"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+      <li class="menu-item search">
+          <form class="search-form">
+            <input name="keyword" type="text" class="search-input" placeholder="站内搜索">
+            <button type="submit" class="search-submit"><i class="fa fa-search"></i></button>
+          </form>
+      </li>
+      <li class="menu-item online"><span id="online-count">无</span>人在线</li>
+    </ul>
+  
+
+  
+</nav>
+
+<div class="site-brand-wrapper" style="background-image: url(/images/header-newgame.jpg)">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <div class="brand">
+        <span class="logo-line-before"><i></i></span>
+        <div class="site-title">
+          <div id="animate" class="animate">
+            <span>H</span><span>i</span><span>,</span><span> </span><span>O</span><span>n</span><span>i</span><span>g</span><span>i</span><span>r</span><span>i</span>
+          </div>
+          <div id="guide" class="guide">
+            <span>H</span><span>i</span><span>,</span><span> </span><span>O</span><span>n</span><span>i</span><span>g</span><span>i</span><span>r</span><span>i</span>
+          </div>
+        </div>
+        <span class="logo-line-after"><i></i></span>
+      </div>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+<div class="site-master" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-master-avatar" itemprop="image" src="/images/aoba.jpg" alt="John Doe">
+    <h2 class="site-master-description" itemprop="description">
+        <font color="#FF4500">蒲烧鳗鱼饭团</font> <font color="#1E90FF">后端开发萌新</font> <s>动漫博主</s>
+    </h2>
+</div>
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-date">
+			<div class="post-month">10月</div>
+			<div class="post-day">09</div>
+	</div>
+  
+
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/09/redis/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="John Doe">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/aoba.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hi, Onigiri">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Redis 技术专题</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-10-09T22:47:02+08:00">
+                2019-10-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Redis-分布式锁"><a href="#Redis-分布式锁" class="headerlink" title="Redis 分布式锁"></a>Redis 分布式锁</h2><p>redis 官方文档中已经很好的说明了分布式锁的实现方式，这里仅会对官方文档做一些补充。</p>
+<h3 id="setnx-实现"><a href="#setnx-实现" class="headerlink" title="setnx 实现"></a>setnx 实现</h3><p><a href="https://redis.io/commands/setnx" target="_blank" rel="noopener">https://redis.io/commands/setnx</a></p>
+<p>注意 setnx 命令没有过期时间参数，其他语言，如 PHP 客户端中的过期时间参数实际为 setnx 和 expire 命令的组合，无法实现原子操作。</p>
+<p>利用 setnx 正确获取锁的流程，检查到锁已过期后，不能直接删除，否则可能会误删别人已经获取到的锁。可以按照本节的方式，通过 getset 命令确保第一个更新该锁的客户端为获取到锁的客户端；也可以使用文档 set 命令一节中介绍的先判断 value 后执行删除的方式避免误删他人的锁。</p>
+<p>下图展示了通过 setnx、getset 方法获取锁的流程，并说明了即使出现竞争条件仍然能够保证锁的排他性。<br><img src="redis-lock-1.png" alt="redis-lock"></p>
+<h3 id="set-nx-ex-实现"><a href="#set-nx-ex-实现" class="headerlink" title="set nx ex 实现"></a>set nx ex 实现</h3><p><a href="https://redis.io/commands/set" target="_blank" rel="noopener">https://redis.io/commands/set</a></p>
+<blockquote>
+<p>This avoids that a client will try to release the lock after the expire time deleting the key created by another client that acquired the lock later.</p>
+</blockquote>
+<p>官方文档中这一段话指出了，在主动释放锁时如果直接使用 DEL 命令删除，可能误删其他客户端正常获取到的锁，从而使多个客户端同时获取到锁。删除时应当借助 lua 脚本根据这个锁的 value 内容来判断删除的锁是否为本客户端之前持有的锁。</p>
+<p>下图说明了这一错误可能发生的场景<br><img src="redis-lock-2.png" alt="redis-lock"></p>
+<p>虽然使用了 lua 脚本，但是只会操作准备释放的这个锁对应的这单个 key，不存在多个 key 的分片问题，在 redis cluster/codis 环境下都能够正常工作。</p>
+<h3 id="分布式高可用实现"><a href="#分布式高可用实现" class="headerlink" title="分布式高可用实现"></a>分布式高可用实现</h3><p><a href="https://redis.io/topics/distlock" target="_blank" rel="noopener">https://redis.io/topics/distlock</a></p>
+<p>前两种实现中加锁作用于 Redis 主节点上，由于 redis 主从异步复制特点，若在锁的 key 在尚未同步到 slave 节点时，master 节点就由于故障发生了主从切换，那么在 slave 节点提升为 master 后，就会出现锁丢失的情况。故 redis 官方文档提供了不同语言的 Redlock 算法实现。</p>
+<p>主要实现方式为设置奇数个 redis master 服务器（不需要有 slave），同时向所有机器获取锁，只有在半数以上机器成功获取到锁的客户端为最终获取锁的客户端。</p>
+<p>这种方式可能存在的问题及如何避免：<br>redis 存在 r1-r5 五个实例，客户端 c1 在 r1-r3 获取了锁，此时 r3 重启所有数据丢失，客户端 c2 便可以在 r3-r5 上同样获取到半数以上的锁，这样客户端 c1、c2 都认为自己获取到了锁，引起数据安全性问题。</p>
+<p>方法一是开启 AOF 持久化配置 fsync=always，如果能够保证崩溃后数据完全不丢失，则可以避免这种情况，但是通常这样设置带来的性能损耗是无法接受的。这样保证一致性但是损失性能。</p>
+<p>方法二是让崩溃的 redis（如 r3）重启后，等待一个锁的 TTL 时间后再提供服务，以保证这台 redis 上的所有键都过期删除，避免出现多个客户端都认为从这台 redis 上成功获取到了锁。但此时集群中为偶数个服务器，若同时可用实例数过少，客户端获取锁时可能无法满足半数以上的要求，导致可能需要多次重试。这样保证一致性但是损失可用性。</p>
+<p>数据一致性、服务可用性、分区容错性无法同时得到满足。</p>
+<h3 id="使用建议"><a href="#使用建议" class="headerlink" title="使用建议"></a>使用建议</h3><p>一般业务场景下，如不需要考虑 redis 服务器崩溃等极端情况下的数据一致性，建议优先使用 set nx ex 方法，若不愿意使用 lua 脚本则应选择 setnx 方法。<br>若需要考虑到 redis 崩溃等情况，只能选择分布式高可用实现方案。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+      <div class="post-share">分享到：</div>
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/09/30/rebuild-k8s-cluster/" rel="next" title="重建 K8S 集群">
+                <i class="fa fa-chevron-left"></i> 重建 K8S 集群
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2020/04/15/kafka/" rel="prev" title="Kafka集群部署及操作">
+                Kafka集群部署及操作 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/card.jpg" alt="John Doe">
+            
+              <p class="site-author-name" itemprop="name">蒲烧鳗鱼饭团</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/lzjohnny" target="_blank" title="GitHub" data-balloon="GitHub" data-balloon-pos="up">
+                    
+                      <i class="fa fa-fw fa-github"></i></a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="https://weibo.com/lzjohnny95" target="_blank" title="Weibo" data-balloon="Weibo" data-balloon-pos="up">
+                    
+                      <i class="fa fa-fw fa-weibo"></i></a>
+                </span>
+              
+            
+          </div>
+
+          
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+            
+
+          </nav>
+
+          
+          
+            <div class="cc-license motion-element" itemprop="license">
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" target="_blank">
+                <img src="/images/cc-by-nc-sa.png" alt="Creative Commons">
+              </a>
+            </div>
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Redis-分布式锁"><span class="nav-number">1.</span> <span class="nav-text">Redis 分布式锁</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#setnx-实现"><span class="nav-number">1.1.</span> <span class="nav-text">setnx 实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#set-nx-ex-实现"><span class="nav-number">1.2.</span> <span class="nav-text">set nx ex 实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#分布式高可用实现"><span class="nav-number">1.3.</span> <span class="nav-text">分布式高可用实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用建议"><span class="nav-number">1.4.</span> <span class="nav-text">使用建议</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-image"></div>
+      <div class="footer-inner">
+        <p>博客已萌萌哒运行<span id="since"></span><span class="my-face">(●'◡'●)ﾉ♥</span></p>
+<p></p>
+
+<p>© <span itemprop="copyrightYear">2020</span> Hi, Onigiri.
+    由 <a href="https://hexo.io/" target="_blank" class="external" rel="nofollow">Hexo</a> 强力驱动.
+    Theme By <a href="https://github.com/DIYgod/hexo-theme-sagiri" target="_blank" class="external" rel="nofollow">Sagiri</a>
+</p>
+<p>Made with <i class="fa fa-heart throb" style="color: #d43f57;"></i> by <span class="author" itemprop="copyrightHolder">蒲烧鳗鱼饭团</span></p>
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    <canvas id="evanyou"></canvas>
+
+    
+
+  </div>
+
+  <script type="text/javascript" src="/js/sagiri.min.js?v=0.0.5"></script>
+
+  
+
+
+
+
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

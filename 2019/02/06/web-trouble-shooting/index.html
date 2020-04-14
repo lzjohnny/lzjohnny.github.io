@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+
+
+
+
+<html class="theme-next pisces" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link href="https://cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+
+    
+  
+
+  
+    
+    
+    <link href="//fonts.cat.net/css?family=Sigmar One:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+  
+
+<link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.css" rel="stylesheet" type="text/css">
+
+
+
+  
+
+<link href="https://cdn.bootcss.com/social-share.js/1.0.9/css/share.min.css" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=0.0.5" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=0.0.5">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico?v=0.0.5">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=0.0.5" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="blog,php,back-end">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="一、问题描述：线上 A 站点所有 URL 使用 https 访问反复刷新时，有时报错有时正常，http 访问始终正常。 二、分析步骤：web机器排查 根据现象：不针对特定URL，全部URL均可能会报错判断不是由业务代码引发的，需重点排查服务器关键进程、框架配置、入口文件等基础服务。 基础服务排查检查 Nginx、PHP-FPM、MySQL 进程正常。检查 PHP-FPM 错误日志始终正常。检查 N">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Nginx 与网站问题排查">
+<meta property="og:url" content="http://yoursite.com/2019/02/06/web-trouble-shooting/index.html">
+<meta property="og:site_name" content="Hi, Onigiri">
+<meta property="og:description" content="一、问题描述：线上 A 站点所有 URL 使用 https 访问反复刷新时，有时报错有时正常，http 访问始终正常。 二、分析步骤：web机器排查 根据现象：不针对特定URL，全部URL均可能会报错判断不是由业务代码引发的，需重点排查服务器关键进程、框架配置、入口文件等基础服务。 基础服务排查检查 Nginx、PHP-FPM、MySQL 进程正常。检查 PHP-FPM 错误日志始终正常。检查 N">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2020-04-14T16:21:41.365Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Nginx 与网站问题排查">
+<meta name="twitter:description" content="一、问题描述：线上 A 站点所有 URL 使用 https 访问反复刷新时，有时报错有时正常，http 访问始终正常。 二、分析步骤：web机器排查 根据现象：不针对特定URL，全部URL均可能会报错判断不是由业务代码引发的，需重点排查服务器关键进程、框架配置、入口文件等基础服务。 基础服务排查检查 Nginx、PHP-FPM、MySQL 进程正常。检查 PHP-FPM 错误日志始终正常。检查 N">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '0.0.5',
+    sidebar: {"position":"right","display":"always","offset":52,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    since: '1/20/2019 11:30:00',
+    onlineAPI: '',
+    googleAnalytics: '',
+    site: {
+      title: 'Hi, Onigiri',
+      subtitle: '',
+      author: 'John Doe'
+    },
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    leancloud: {
+      enable: false,
+      appID: '',
+      appKey: ''
+    },
+    favicon: {
+      visibilitychange: false,
+      narmal: '/images/favicon.ico',
+      hidden: '/images/failure.ico',
+      show_text: '(/≧▽≦/)咦！又好了！',
+      hide_text: '(●—●)喔哟，崩溃啦！'
+    }
+  };
+</script>
+
+
+
+  
+    <script type="text/javascript" src="https://cdn.bootcss.com/jquery/2.1.3/jquery.min.js"></script>
+
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/02/06/web-trouble-shooting/">
+
+
+
+
+
+  <title>Nginx 与网站问题排查 | Hi, Onigiri</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-mars"></i> <br>
+            
+            链接
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-rocket"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+      <li class="menu-item search">
+          <form class="search-form">
+            <input name="keyword" type="text" class="search-input" placeholder="站内搜索">
+            <button type="submit" class="search-submit"><i class="fa fa-search"></i></button>
+          </form>
+      </li>
+      <li class="menu-item online"><span id="online-count">无</span>人在线</li>
+    </ul>
+  
+
+  
+</nav>
+
+<div class="site-brand-wrapper" style="background-image: url(/images/header-newgame.jpg)">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <div class="brand">
+        <span class="logo-line-before"><i></i></span>
+        <div class="site-title">
+          <div id="animate" class="animate">
+            <span>H</span><span>i</span><span>,</span><span> </span><span>O</span><span>n</span><span>i</span><span>g</span><span>i</span><span>r</span><span>i</span>
+          </div>
+          <div id="guide" class="guide">
+            <span>H</span><span>i</span><span>,</span><span> </span><span>O</span><span>n</span><span>i</span><span>g</span><span>i</span><span>r</span><span>i</span>
+          </div>
+        </div>
+        <span class="logo-line-after"><i></i></span>
+      </div>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+<div class="site-master" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-master-avatar" itemprop="image" src="/images/aoba.jpg" alt="John Doe">
+    <h2 class="site-master-description" itemprop="description">
+        <font color="#FF4500">蒲烧鳗鱼饭团</font> <font color="#1E90FF">后端开发萌新</font> <s>动漫博主</s>
+    </h2>
+</div>
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-date">
+			<div class="post-month">02月</div>
+			<div class="post-day">06</div>
+	</div>
+  
+
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/02/06/web-trouble-shooting/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="John Doe">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/aoba.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hi, Onigiri">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Nginx 与网站问题排查</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-06T22:19:08+08:00">
+                2019-02-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="一、问题描述："><a href="#一、问题描述：" class="headerlink" title="一、问题描述："></a>一、问题描述：</h2><p>线上 A 站点所有 URL 使用 https 访问反复刷新时，有时报错有时正常，http 访问始终正常。</p>
+<h2 id="二、分析步骤："><a href="#二、分析步骤：" class="headerlink" title="二、分析步骤："></a>二、分析步骤：</h2><h5 id="web机器排查"><a href="#web机器排查" class="headerlink" title="web机器排查"></a>web机器排查</h5><ol>
+<li>根据现象：不针对特定URL，全部URL均可能会报错<br>判断不是由业务代码引发的，需重点排查服务器关键进程、框架配置、入口文件等基础服务。</li>
+<li>基础服务排查<br>检查 Nginx、PHP-FPM、MySQL 进程正常。<br>检查 PHP-FPM 错误日志始终正常。<br>检查 Nginx access 日志始终正常。</li>
+<li>根据现象：错误不稳定出现<br>日志正常且错误不稳定出现，判断可能有的机器运行正常，有的机器报错。</li>
+<li>打开 A 站点对应的全部机器的 Nginx 日志观察<br>注意到页面访问正常时，Nginx 对应日志正常，页面报错时，请求无对应日志。判断可能是 web 机的上层负载均衡配置有误，导致请求被转发到其他无关机器上。</li>
+</ol>
+<h5 id="网关机器排查"><a href="#网关机器排查" class="headerlink" title="网关机器排查"></a>网关机器排查</h5><ol>
+<li>检查上层网关机器 Nginx 日志<br>网关之下对应 A、B、C、D 等多个 web 站点，观察 A 站点 Nginx 访问日志发现 http 请求有日志记录，但 https 请求无日志记录，怀疑 https 请求可能由于 DNS 配置原因未经过网关机器。</li>
+<li>确认请求流程<br>重新检查 web 站点 Nginx 日志，观察来源 IP，发现请求确实是来自于网关机器，此时陷入僵局。<br>（web机器有访问日志，且请求来源于网关机器，但网关机器又观察不到访问日志）</li>
+<li>再次确认请求流程<br>既然 web 机器日志记录了请求来自于网关机器，则检查网关所有站点 Nginx 访问日志（之前只观察A站点的访问日志），结果在另外毫不相干的站点的访问日志中发现该请求。<br>就是说：浏览器访问 A 域名，在网关层 A.access.log 日志无记录，却在 B.access.log 有记录，并且 A、B 站点业务上毫无关系。这里应该就是问题的突破口。</li>
+<li>检查网关 A、B 域名对应的 Nginx 配置<br>发现 A 域名只配置监听 80 端口，而 B 域名配置了 80 和 443 端口，这就是问题所在：</li>
+</ol>
+<p><strong>Nginx 配置中 server_name 和 listen 端口不能同时匹配时，会优先匹配端口而忽略 server_name，故使用 https 访问A站点时，由于没有完全匹配的配置，实际使用了 B 站点的 Nginx 配置。</strong></p>
+<p>具体来说，A 站点是 admin.example.com，B 站点是 qnstatic.example.com，C 站点是 wxapi.example.com，查看 B 的负载均衡规则：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">server &#123;</span><br><span class="line">    listen       443 ssl;</span><br><span class="line">    server_name  qnstatic.example.com;</span><br><span class="line">    charset utf-8;</span><br><span class="line">    access_log  /var/log/nginx/qnstatic.example.com.access.log main;</span><br><span class="line">        location / &#123;</span><br><span class="line">                if ($http_user_agent  ~* (spider))  &#123; proxy_pass  http://spider.example.com; &#125;</span><br><span class="line">                proxy_pass              http://wxapi.example.com;</span><br><span class="line">                proxy_set_header Host $host;</span><br><span class="line">                proxy_set_header X-Real-IP $remote_addr;</span><br><span class="line">                proxy_set_header REMOTE-HOST $remote_addr;</span><br><span class="line">                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>访问 admin.example.com:443 时，优先使用端口匹配到上述配置（qnstatic.example.com 站点的配置），请求由 proxy_pass 到 wxapi.example.com 站点，会优先使用 upstream 中 wxapi.example.com 域名的配置来解析成 IP，如没有相应配置会使用 DNS 解析 wxapi.example.com 域名</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">upstream wxapi.example.com &#123;</span><br><span class="line">        server 172.16.16.97:80 weight=5 max_fails=2 fail_timeout=2;</span><br><span class="line">        server 172.16.16.98:80 weight=5 max_fails=2 fail_timeout=2;</span><br><span class="line">        server 172.16.16.95:80 weight=5 max_fails=2 fail_timeout=2;</span><br><span class="line">        server 172.16.16.96:80 weight=5 max_fails=2 fail_timeout=2;</span><br><span class="line">        server 172.16.16.79:80 weight=5 max_fails=2 fail_timeout=2;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>所以请求最终会被分发到 wxapi 站点对应的web机器上，恰巧 wxapi 站点对应的5台服务器中，3台也同时被 admin 站点共用。如果请求碰巧转发到共用的机器上，则一切正常，否则则会报错。这就是使用 https 访问反复刷新时，有时报错有时正常的原因。</p>
+<h2 id="三、排查结论"><a href="#三、排查结论" class="headerlink" title="三、排查结论"></a>三、排查结论</h2><p>概括来说，浏览器访问 A 域名，网关层 Nginx 匹配到 B 域名的配置，proxy_pass 到 C 域名，分发到了 C 域名下的 web 服务器。</p>
+<p>另外补充说明，该请求到达 C 的 web 服务器后，在该服务器的 Nginx 中仍然会用原始的 A 域名去匹配 server_name，而非 proxy_pass 配置的 C 域名！C 域名仅仅用来确定转发的目的机器，不起到匹配作用。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+      <div class="post-share">分享到：</div>
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/04/code-refactor-summary/" rel="next" title="代码重构回顾">
+                <i class="fa fa-chevron-left"></i> 代码重构回顾
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/16/mysql-index/" rel="prev" title="MySQL索引应用总结">
+                MySQL索引应用总结 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/card.jpg" alt="John Doe">
+            
+              <p class="site-author-name" itemprop="name">蒲烧鳗鱼饭团</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/lzjohnny" target="_blank" title="GitHub" data-balloon="GitHub" data-balloon-pos="up">
+                    
+                      <i class="fa fa-fw fa-github"></i></a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="https://weibo.com/lzjohnny95" target="_blank" title="Weibo" data-balloon="Weibo" data-balloon-pos="up">
+                    
+                      <i class="fa fa-fw fa-weibo"></i></a>
+                </span>
+              
+            
+          </div>
+
+          
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+            
+
+          </nav>
+
+          
+          
+            <div class="cc-license motion-element" itemprop="license">
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" target="_blank">
+                <img src="/images/cc-by-nc-sa.png" alt="Creative Commons">
+              </a>
+            </div>
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#一、问题描述："><span class="nav-number">1.</span> <span class="nav-text">一、问题描述：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#二、分析步骤："><span class="nav-number">2.</span> <span class="nav-text">二、分析步骤：</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#web机器排查"><span class="nav-number">2.0.0.1.</span> <span class="nav-text">web机器排查</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#网关机器排查"><span class="nav-number">2.0.0.2.</span> <span class="nav-text">网关机器排查</span></a></li></ol></li></ol><li class="nav-item nav-level-2"><a class="nav-link" href="#三、排查结论"><span class="nav-number">3.</span> <span class="nav-text">三、排查结论</span></a></li></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-image"></div>
+      <div class="footer-inner">
+        <p>博客已萌萌哒运行<span id="since"></span><span class="my-face">(●'◡'●)ﾉ♥</span></p>
+<p></p>
+
+<p>© <span itemprop="copyrightYear">2020</span> Hi, Onigiri.
+    由 <a href="https://hexo.io/" target="_blank" class="external" rel="nofollow">Hexo</a> 强力驱动.
+    Theme By <a href="https://github.com/DIYgod/hexo-theme-sagiri" target="_blank" class="external" rel="nofollow">Sagiri</a>
+</p>
+<p>Made with <i class="fa fa-heart throb" style="color: #d43f57;"></i> by <span class="author" itemprop="copyrightHolder">蒲烧鳗鱼饭团</span></p>
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    <canvas id="evanyou"></canvas>
+
+    
+
+  </div>
+
+  <script type="text/javascript" src="/js/sagiri.min.js?v=0.0.5"></script>
+
+  
+
+
+
+
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

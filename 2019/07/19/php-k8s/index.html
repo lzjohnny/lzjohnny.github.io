@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+
+
+
+
+<html class="theme-next pisces" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link href="https://cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+
+    
+  
+
+  
+    
+    
+    <link href="//fonts.cat.net/css?family=Sigmar One:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+  
+
+<link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.css" rel="stylesheet" type="text/css">
+
+
+
+  
+
+<link href="https://cdn.bootcss.com/social-share.js/1.0.9/css/share.min.css" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=0.0.5" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=0.0.5">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico?v=0.0.5">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=0.0.5" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="blog,php,back-end">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="基础环境：   PHP 7.2.7 Docker 18.09.2 Kubernetes 1.12   PHP 开启 huge_code_pages 报错解决方式PHP 开启 opcache.huge_code_pages=1 后，运行时报错：Zend OPcache huge_code_pages: mmap(HUGETLB) failed: Cannot allocate memory (12)">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PHP 容器化 K8S 迁移问题排查解决">
+<meta property="og:url" content="http://yoursite.com/2019/07/19/php-k8s/index.html">
+<meta property="og:site_name" content="Hi, Onigiri">
+<meta property="og:description" content="基础环境：   PHP 7.2.7 Docker 18.09.2 Kubernetes 1.12   PHP 开启 huge_code_pages 报错解决方式PHP 开启 opcache.huge_code_pages=1 后，运行时报错：Zend OPcache huge_code_pages: mmap(HUGETLB) failed: Cannot allocate memory (12)">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://yoursite.com/2019/07/19/php-k8s/meminfo.png">
+<meta property="og:image" content="http://yoursite.com/2019/07/19/php-k8s/hugepages.png">
+<meta property="og:image" content="http://yoursite.com/2019/07/19/php-k8s/kubeadm-conf.png">
+<meta property="og:image" content="http://yoursite.com/2019/07/19/php-k8s/hugepages-allocated.png">
+<meta property="og:image" content="http://yoursite.com/2019/07/19/php-k8s/pods-1.png">
+<meta property="og:image" content="http://yoursite.com/2019/07/19/php-k8s/pods-2.png">
+<meta property="og:image" content="http://yoursite.com/2019/07/19/php-k8s/systemctl-status.png">
+<meta property="og:image" content="http://yoursite.com/2019/07/19/php-k8s/kubelet-kubeadm-conf.png">
+<meta property="og:image" content="http://yoursite.com/2019/07/19/php-k8s/loadbalancer.png">
+<meta property="og:updated_time" content="2020-04-14T16:21:41.327Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="PHP 容器化 K8S 迁移问题排查解决">
+<meta name="twitter:description" content="基础环境：   PHP 7.2.7 Docker 18.09.2 Kubernetes 1.12   PHP 开启 huge_code_pages 报错解决方式PHP 开启 opcache.huge_code_pages=1 后，运行时报错：Zend OPcache huge_code_pages: mmap(HUGETLB) failed: Cannot allocate memory (12)">
+<meta name="twitter:image" content="http://yoursite.com/2019/07/19/php-k8s/meminfo.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '0.0.5',
+    sidebar: {"position":"right","display":"always","offset":52,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    since: '1/20/2019 11:30:00',
+    onlineAPI: '',
+    googleAnalytics: '',
+    site: {
+      title: 'Hi, Onigiri',
+      subtitle: '',
+      author: 'John Doe'
+    },
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    leancloud: {
+      enable: false,
+      appID: '',
+      appKey: ''
+    },
+    favicon: {
+      visibilitychange: false,
+      narmal: '/images/favicon.ico',
+      hidden: '/images/failure.ico',
+      show_text: '(/≧▽≦/)咦！又好了！',
+      hide_text: '(●—●)喔哟，崩溃啦！'
+    }
+  };
+</script>
+
+
+
+  
+    <script type="text/javascript" src="https://cdn.bootcss.com/jquery/2.1.3/jquery.min.js"></script>
+
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/07/19/php-k8s/">
+
+
+
+
+
+  <title>PHP 容器化 K8S 迁移问题排查解决 | Hi, Onigiri</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-mars"></i> <br>
+            
+            链接
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-rocket"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+      <li class="menu-item search">
+          <form class="search-form">
+            <input name="keyword" type="text" class="search-input" placeholder="站内搜索">
+            <button type="submit" class="search-submit"><i class="fa fa-search"></i></button>
+          </form>
+      </li>
+      <li class="menu-item online"><span id="online-count">无</span>人在线</li>
+    </ul>
+  
+
+  
+</nav>
+
+<div class="site-brand-wrapper" style="background-image: url(/images/header-newgame.jpg)">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <div class="brand">
+        <span class="logo-line-before"><i></i></span>
+        <div class="site-title">
+          <div id="animate" class="animate">
+            <span>H</span><span>i</span><span>,</span><span> </span><span>O</span><span>n</span><span>i</span><span>g</span><span>i</span><span>r</span><span>i</span>
+          </div>
+          <div id="guide" class="guide">
+            <span>H</span><span>i</span><span>,</span><span> </span><span>O</span><span>n</span><span>i</span><span>g</span><span>i</span><span>r</span><span>i</span>
+          </div>
+        </div>
+        <span class="logo-line-after"><i></i></span>
+      </div>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+<div class="site-master" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-master-avatar" itemprop="image" src="/images/aoba.jpg" alt="John Doe">
+    <h2 class="site-master-description" itemprop="description">
+        <font color="#FF4500">蒲烧鳗鱼饭团</font> <font color="#1E90FF">后端开发萌新</font> <s>动漫博主</s>
+    </h2>
+</div>
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-date">
+			<div class="post-month">07月</div>
+			<div class="post-day">19</div>
+	</div>
+  
+
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/07/19/php-k8s/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="John Doe">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/aoba.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hi, Onigiri">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">PHP 容器化 K8S 迁移问题排查解决</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-07-19T09:06:47+08:00">
+                2019-07-19
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>基础环境：</p>
+<blockquote>
+<ul>
+<li>PHP 7.2.7</li>
+<li>Docker 18.09.2</li>
+<li>Kubernetes 1.12</li>
+</ul>
+</blockquote>
+<h2 id="PHP-开启-huge-code-pages-报错解决方式"><a href="#PHP-开启-huge-code-pages-报错解决方式" class="headerlink" title="PHP 开启 huge_code_pages 报错解决方式"></a>PHP 开启 huge_code_pages 报错解决方式</h2><p>PHP 开启 opcache.huge_code_pages=1 后，运行时报错：Zend OPcache huge_code_pages: mmap(HUGETLB) failed: Cannot allocate memory (12)</p>
+<h3 id="问题原因"><a href="#问题原因" class="headerlink" title="问题原因"></a>问题原因</h3><p>系统 Hugepage 不足，CentOS 系统中 Hugepage 是没有默认开启的，可以通过下面命令查看，可见 HugePages_Total 是 0</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /proc/meminfo | grep Huge</span><br></pre></td></tr></table></figure>
+
+<p><img src="meminfo.png" alt="meminfo"></p>
+<h3 id="解决步骤"><a href="#解决步骤" class="headerlink" title="解决步骤"></a>解决步骤</h3><p><strong>(1) 开启宿主机 Hugepage</strong></p>
+<p>/etc/sysctl.conf 添加配置 <code>vm.nr_hugepages = 512</code>，保存退出，执行 sysctl -p 使配置生效，再次执行 cat /proc/meminfo | grep Huge 查看已分配 HugePages_Total 为 512。<br>如果查看结果与设置数值相差较大，则可能为系统已经无法分配出连续的这些内存，重启服务器后再重复操作即可。<br>注意上图 Hugepagesize 是 2048KB，也就是单个 Hugepage 是 2M，分配 512 个 Hugepage，所以总共分配的内存是 1G。</p>
+<p>补充说明：单个 Hugepage 有 2048kB 和 1048576kB 两种，执行 ls /sys/devices/system/node/node0/hugepages，可见：<br><img src="hugepages.png" alt="hugepages"></p>
+<p><strong>(2) 为 nodes 分配 Hugepage</strong></p>
+<p>可参考 Kubernetes 官方文档“<a href="https://kubernetes.io/zh/docs/tasks/manage-hugepages/scheduling-hugepages/" target="_blank" rel="noopener">管理巨页</a>”一节。首先 Kubernetes 节点宿主机必须预先分配巨页，这在上一步已经完成。<br>需要将开关 HugePages 设置为 true：<code>--feature-gates=HugePages=true</code><br>在 master 和 node 各个节点上都修改 /etc/systemd/system/kubelet.service.d/10-kubeadm.conf 文件，增加启动参数 <code>--feature-gates=HugePages=true</code> 。如图所示：<br><img src="kubeadm-conf.png" alt="kubeadm-conf"></p>
+<p>修改后需要重启kubelet使参数生效：<br>systemctl daemon-reload<br>systemctl restart kubelet<br>此时在 master 执行 kubectl describe nodes，hugepages-2Mi 配置已经由 0 变为 1Gi：<br><img src="hugepages-allocated.png" alt="hugepages-allocated"></p>
+<p><strong>(3) 在 Deployment中使用 hugepages</strong></p>
+<p>如果不进行该步骤直接部署容器会导致执行 PHP 任何命令均报错 Bus error (core dumped)<br>参考 Kubernetes 官方文档 “<a href="https://kubernetes.io/docs/tasks/manage-hugepages/scheduling-hugepages/#api" target="_blank" rel="noopener">管理巨页</a>” 中的 yaml 文件示例。<br>按照官方示例 yaml，添加 spec.containers.volumeMounts、spec.containers.resources、spec.volumes 即可，虽然官方是 Pod 的 yaml 做示例，但 Deployment、DaemonSet 修改方式都相同。</p>
+<p><strong>(4) 部署完成</strong></p>
+<p>部署完成后进入 Docker，执行 php -i | grep -i huge 检查 huge_code_pages 确实已经开启，且命令运行正常，问题解决。</p>
+<p><strong>(5) 巨页分配注意事项</strong></p>
+<p>其中 memory: 1024Mi 的数值要按照第一步分配的内存确定，512 * 2048KB = 1024M<br>需注意，一方面对于 PHP-FPM 应用，分配内存不宜过小。实测当分配 100M 但 FPM 启动多达 200 个进程时会由于内存不足频繁报错 child exited on signal 9 (SIGKILL) after xxx seconds from start。<br>另一方面，所有需要使用 hugepage 的应用 <strong>分配并独占</strong> 宿主机相应大小的 hugepage 空间，如果一个 Deployment 已分配了全部的 1024M 内存，另一个也需要 hugepage 的 Deployment 会处于 Pending 状态而不会启动成功。</p>
+<h3 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3><ul>
+<li><a href="https://juejin.im/entry/5bd9d4786fb9a0228b409420" target="_blank" rel="noopener">https://juejin.im/entry/5bd9d4786fb9a0228b409420</a></li>
+<li><a href="https://v1-14.docs.kubernetes.io/docs/tasks/manage-hugepages/scheduling-hugepages/" target="_blank" rel="noopener">https://v1-14.docs.kubernetes.io/docs/tasks/manage-hugepages/scheduling-hugepages/</a></li>
+<li><a href="https://kubernetes.io/zh/docs/tasks/manage-hugepages/scheduling-hugepages/" target="_blank" rel="noopener">https://kubernetes.io/zh/docs/tasks/manage-hugepages/scheduling-hugepages/</a></li>
+<li><a href="https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/" target="_blank" rel="noopener">https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/</a></li>
+</ul>
+<h2 id="PHP-上传文件报错"><a href="#PHP-上传文件报错" class="headerlink" title="PHP 上传文件报错"></a>PHP 上传文件报错</h2><p>PHP Web 服务容器化部署后，上传文件报错：file_get_contents(): Filename cannot be empty<br>根据 php.ini 中 <code>upload_tmp_dir = /tmp/php7temp</code> 配置，检查容器中 /tmp/php7temp 目录是否存在、PHP-FPM 用户是否可写，若不存在可通过 K8S 的 emptyDir 挂载：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">containers:</span></span><br><span class="line"><span class="attr">  - name:</span> <span class="string">php-container</span></span><br><span class="line"><span class="attr">    volumeMounts:</span></span><br><span class="line"><span class="attr">      - mountPath:</span> <span class="string">/tmp/php7temp</span></span><br><span class="line"><span class="attr">        name:</span> <span class="string">php-upload-tmp-dir</span></span><br><span class="line"></span><br><span class="line"><span class="attr">  volumes:</span></span><br><span class="line"><span class="attr">    - name:</span> <span class="string">php-upload-tmp-dir</span></span><br><span class="line"><span class="attr">      emptyDir:</span> <span class="string">&#123;&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>参考 Kubernetes 官方文档 “<a href="https://kubernetes.io/docs/concepts/storage/volumes/#example-pod" target="_blank" rel="noopener">volumes</a>” 一节 emptyDir 的示例。</p>
+<h2 id="采用K8S部署后配置、代码自动更新"><a href="#采用K8S部署后配置、代码自动更新" class="headerlink" title="采用K8S部署后配置、代码自动更新"></a>采用K8S部署后配置、代码自动更新</h2><p>应用配置、Nginx 配置、PHP-FPM 配置均是采用 ConfigMap 指定 subPath 的方式挂载到容器，一般环境变量或是 subPath 方式设置的配置不能自动更新。</p>
+<p>滚动更新思路：Deployment 等 yaml 文件 template 字段下的内容发生变化时可以触发滚动更新，所以增加在 <code>annotations</code> 字段下增加配置版本信息即可，配置变更时由配置管理系统或是 githook 触发，自动更新生成新 yaml 并通过 kubectl apply -f 命令滚动更新。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  template:</span></span><br><span class="line"><span class="attr">    metadata:</span></span><br><span class="line"><span class="attr">      annotations:</span></span><br><span class="line"><span class="attr">        codeVersionId:</span> <span class="string">CODE_VERSION_ID</span> <span class="comment"># 供代码版本变化滚动更新</span></span><br><span class="line"><span class="attr">        configVersionId:</span> <span class="string">CONFIG_VERSION_ID</span> <span class="comment"># 供配置变化滚动更新</span></span><br></pre></td></tr></table></figure>
+
+<p>同理可以实现代码版本变化自动滚动更新，只需通过 githook 每次提交代码时把 commit_id 或其他代码版本标识放入 yaml 文件即可。</p>
+<p>参考他人文章：<a href="https://jimmysong.io/kubernetes-handbook/concepts/configmap-hot-update.html" target="_blank" rel="noopener">ConfigMap的热更新</a></p>
+<h2 id="指定容器内进程启动用户"><a href="#指定容器内进程启动用户" class="headerlink" title="指定容器内进程启动用户"></a>指定容器内进程启动用户</h2><p>默认容器内进程以 root 用户启动，为避免安全风险等目的，可以使用非 root 用户启动。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">spec:</span></span><br><span class="line"><span class="attr">  template:</span></span><br><span class="line"><span class="attr">    spec:</span></span><br><span class="line"><span class="attr">      securityContext:</span></span><br><span class="line"><span class="attr">        runAsUser:</span> <span class="number">498</span></span><br><span class="line"><span class="attr">      containers:</span></span><br><span class="line">	    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">php-container</span></span><br><span class="line"><span class="attr">          securityContext:</span></span><br><span class="line"><span class="attr">            privileged:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">            allowPrivilegeEscalation:</span> <span class="literal">false</span></span><br></pre></td></tr></table></figure>
+
+<p>其中 runAsUser 为执行用户的 UID，该 UID 必须预先存在于镜像中，如 498 为本人镜像中 nginx 用户 UID。</p>
+<p>privileged 配置禁止从容器内访问宿主机任何设备（默认配置），allowPrivilegeEscalation 配置禁止子进程获取比主进程更高的权限。<br>根据官方文档的 yaml 文件，如果不希望使用 root 用户启动，推荐配置 privileged 和 allowPrivilegeEscalation 都为 false。</p>
+<p>参考 Kubernetes 官方文档 “<a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#example-policies" target="_blank" rel="noopener">Pod 安全策略</a>” 一节中的示例。</p>
+<h2 id="Node-节点服务器启动时，NAS-盘挂载晚于-Pods-创建"><a href="#Node-节点服务器启动时，NAS-盘挂载晚于-Pods-创建" class="headerlink" title="Node 节点服务器启动时，NAS 盘挂载晚于 Pods 创建"></a>Node 节点服务器启动时，NAS 盘挂载晚于 Pods 创建</h2><p>K8S 集群新节点服务器启动时，NAS盘在 /etc/rc.local 中通过 mount 命令挂载，在未完成挂载时 Pods 已经创建，导致 NAS 盘无法挂载进 Pods。<br>解决方式：非本地盘建议通过 PV/PVC 方式挂载，避免使用 hostPath 方式挂载。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">- name:</span> <span class="string">img-dir</span></span><br><span class="line"><span class="attr">  flexVolume:</span></span><br><span class="line">	<span class="attr">driver:</span> <span class="string">"alicloud/nas"</span></span><br><span class="line">	<span class="attr">options:</span></span><br><span class="line">	  <span class="attr">server:</span> <span class="string">"xxxxx.cn-beijing.nas.aliyuncs.com"</span></span><br><span class="line">	  <span class="attr">path:</span> <span class="string">"/img/img2"</span></span><br><span class="line">	  <span class="attr">vers:</span> <span class="string">"3"</span></span><br></pre></td></tr></table></figure>
+
+<p>若使用阿里云可以参考：<a href="https://help.aliyun.com/document_detail/86784.html" target="_blank" rel="noopener">https://help.aliyun.com/document_detail/86784.html</a></p>
+<h2 id="解决-Node-节点上最多-110-个-Pods-的限制"><a href="#解决-Node-节点上最多-110-个-Pods-的限制" class="headerlink" title="解决 Node 节点上最多 110 个 Pods 的限制"></a>解决 Node 节点上最多 110 个 Pods 的限制</h2><p>在需要修改的 Node 节点修改 kubelet 配置，vi /etc/sysconfig/kubelet 修改 KUBELET_EXTRA_ARGS=”–max-pods=1100”<br>修改后重启kubelet使参数生效：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl daemon-reload</span><br><span class="line">systemctl restart kubelet</span><br></pre></td></tr></table></figure>
+
+<p>未作修改时 kubectl describe node 查看到的 Pods 数量：<br><img src="pods-1.png" alt="pods-1">查看修改后的 Pods 数量：<br><img src="pods-2.png" alt="pods-2">需要注意，此时最大 Pods 数量限制得以放松，但是仍然存在每个 Node 上的 Pods 地址范围限制。<br>默认每个 Node 的 Pods 地址范围是 C 类地址，如果这些 Pods 需要暴露 IP，那么每个节点仍不能部署超过约 255 个 Pods。<br>修改 PodCIDR 需要重建集群，具体操作后续将在其他文章中说明。</p>
+<p>说明：如何找到 /etc/sysconfig/kubelet 文件的：<br>(1) 查看 kubelet 状态：systemctl status kubelet<br>(2) 找到服务加载的配置文件：/usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf<br><img src="systemctl-status.png" alt="systemctl-status">(3) 在 10-kubeadm.conf 里找到服务启动命令：<br>ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS<br><img src="kubelet-kubeadm-conf.png" alt="kubeadm-conf">结合注释可知，KUBELET_EXTRA_ARGS 参数来自于 /etc/sysconfig/kubelet 文件，并且会覆盖默认启动参数，故在该文件添加 KUBELET_EXTRA_ARGS=”–max-pods=1100” 即可。</p>
+<h2 id="Nginx-获取客户端真实-IP"><a href="#Nginx-获取客户端真实-IP" class="headerlink" title="Nginx 获取客户端真实 IP"></a>Nginx 获取客户端真实 IP</h2><p>在使用 NodePort 方式暴露的 web 服务的 nginx 日志中，remote_addr 字段无法正确取得来源 IP。<br>这个IP地址应该是 flannel cni0 的 IP 地址，Loadbalancer 或者 NodePort 在经过主机转发时会 SNAT 成 cni0 的 IP 地址。</p>
+<p>通过设置 service.spec.externalTrafficPolicy 字段为 Local 使数据包只转发到本机，则真实来源 IP 地址会被保留，但是这样也失去了优雅重启特性。<br>可以考虑 Service 采用 Loadbalancer 方式暴露，并在上层接入能够自动监测 Pods 状态的负载均衡器，在 Pods 停止时及时摘除对于节点的服务。<br><img src="loadbalancer.png" alt="loadbalancer"></p>
+<p>参考：<br><a href="https://kubernetes.io/zh/docs/tutorials/services/source-ip/" target="_blank" rel="noopener">https://kubernetes.io/zh/docs/tutorials/services/source-ip/</a></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+      <div class="post-share">分享到：</div>
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/04/01/database-migration/" rel="next" title="数据库拆分迁移">
+                <i class="fa fa-chevron-left"></i> 数据库拆分迁移
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/08/30/operation/" rel="prev" title="乳腺全切手术术后注意">
+                乳腺全切手术术后注意 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/card.jpg" alt="John Doe">
+            
+              <p class="site-author-name" itemprop="name">蒲烧鳗鱼饭团</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/lzjohnny" target="_blank" title="GitHub" data-balloon="GitHub" data-balloon-pos="up">
+                    
+                      <i class="fa fa-fw fa-github"></i></a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="https://weibo.com/lzjohnny95" target="_blank" title="Weibo" data-balloon="Weibo" data-balloon-pos="up">
+                    
+                      <i class="fa fa-fw fa-weibo"></i></a>
+                </span>
+              
+            
+          </div>
+
+          
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+            
+
+          </nav>
+
+          
+          
+            <div class="cc-license motion-element" itemprop="license">
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" target="_blank">
+                <img src="/images/cc-by-nc-sa.png" alt="Creative Commons">
+              </a>
+            </div>
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#PHP-开启-huge-code-pages-报错解决方式"><span class="nav-number">1.</span> <span class="nav-text">PHP 开启 huge_code_pages 报错解决方式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#问题原因"><span class="nav-number">1.1.</span> <span class="nav-text">问题原因</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解决步骤"><span class="nav-number">1.2.</span> <span class="nav-text">解决步骤</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#参考资料"><span class="nav-number">1.3.</span> <span class="nav-text">参考资料</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#PHP-上传文件报错"><span class="nav-number">2.</span> <span class="nav-text">PHP 上传文件报错</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#采用K8S部署后配置、代码自动更新"><span class="nav-number">3.</span> <span class="nav-text">采用K8S部署后配置、代码自动更新</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#指定容器内进程启动用户"><span class="nav-number">4.</span> <span class="nav-text">指定容器内进程启动用户</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Node-节点服务器启动时，NAS-盘挂载晚于-Pods-创建"><span class="nav-number">5.</span> <span class="nav-text">Node 节点服务器启动时，NAS 盘挂载晚于 Pods 创建</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#解决-Node-节点上最多-110-个-Pods-的限制"><span class="nav-number">6.</span> <span class="nav-text">解决 Node 节点上最多 110 个 Pods 的限制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Nginx-获取客户端真实-IP"><span class="nav-number">7.</span> <span class="nav-text">Nginx 获取客户端真实 IP</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-image"></div>
+      <div class="footer-inner">
+        <p>博客已萌萌哒运行<span id="since"></span><span class="my-face">(●'◡'●)ﾉ♥</span></p>
+<p></p>
+
+<p>© <span itemprop="copyrightYear">2020</span> Hi, Onigiri.
+    由 <a href="https://hexo.io/" target="_blank" class="external" rel="nofollow">Hexo</a> 强力驱动.
+    Theme By <a href="https://github.com/DIYgod/hexo-theme-sagiri" target="_blank" class="external" rel="nofollow">Sagiri</a>
+</p>
+<p>Made with <i class="fa fa-heart throb" style="color: #d43f57;"></i> by <span class="author" itemprop="copyrightHolder">蒲烧鳗鱼饭团</span></p>
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    <canvas id="evanyou"></canvas>
+
+    
+
+  </div>
+
+  <script type="text/javascript" src="/js/sagiri.min.js?v=0.0.5"></script>
+
+  
+
+
+
+
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

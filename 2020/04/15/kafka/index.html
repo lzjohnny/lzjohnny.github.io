@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+
+
+
+
+<html class="theme-next pisces" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link href="https://cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+
+    
+  
+
+  
+    
+    
+    <link href="//fonts.cat.net/css?family=Sigmar One:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+  
+
+<link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.css" rel="stylesheet" type="text/css">
+
+
+
+  
+
+<link href="https://cdn.bootcss.com/social-share.js/1.0.9/css/share.min.css" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=0.0.5" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=0.0.5">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico?v=0.0.5">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=0.0.5" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="blog,php,back-end">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="集群基础结构集群服务器奇数数量的 kafka 服务器，作为 kafka broker 节点。奇数数量的 zookeeper 服务器。kafka 和 zookeeper 服务器数量可以不一致，目前生产环境中 zookeeper 是 3 节点的集群，kafka 是 5 节点集群。 验证集群结构如果知道 zookeeper 地址，可通过如下方式查看 kafka 集群结构；如果知道 kafka 地址，在">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kafka集群部署及操作">
+<meta property="og:url" content="http://yoursite.com/2020/04/15/kafka/index.html">
+<meta property="og:site_name" content="Hi, Onigiri">
+<meta property="og:description" content="集群基础结构集群服务器奇数数量的 kafka 服务器，作为 kafka broker 节点。奇数数量的 zookeeper 服务器。kafka 和 zookeeper 服务器数量可以不一致，目前生产环境中 zookeeper 是 3 节点的集群，kafka 是 5 节点集群。 验证集群结构如果知道 zookeeper 地址，可通过如下方式查看 kafka 集群结构；如果知道 kafka 地址，在">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://yoursite.com/2020/04/15/kafka/kafka-controller.jpg">
+<meta property="og:image" content="http://yoursite.com/2020/04/15/kafka/consumer-partition.jpg">
+<meta property="og:image" content="http://yoursite.com/2020/04/15/kafka/topic-info.png">
+<meta property="og:image" content="http://yoursite.com/2020/04/15/kafka/consumer-group.png">
+<meta property="og:updated_time" content="2020-04-14T17:42:01.934Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Kafka集群部署及操作">
+<meta name="twitter:description" content="集群基础结构集群服务器奇数数量的 kafka 服务器，作为 kafka broker 节点。奇数数量的 zookeeper 服务器。kafka 和 zookeeper 服务器数量可以不一致，目前生产环境中 zookeeper 是 3 节点的集群，kafka 是 5 节点集群。 验证集群结构如果知道 zookeeper 地址，可通过如下方式查看 kafka 集群结构；如果知道 kafka 地址，在">
+<meta name="twitter:image" content="http://yoursite.com/2020/04/15/kafka/kafka-controller.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '0.0.5',
+    sidebar: {"position":"right","display":"always","offset":52,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    since: '1/20/2019 11:30:00',
+    onlineAPI: '',
+    googleAnalytics: '',
+    site: {
+      title: 'Hi, Onigiri',
+      subtitle: '',
+      author: 'John Doe'
+    },
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    leancloud: {
+      enable: false,
+      appID: '',
+      appKey: ''
+    },
+    favicon: {
+      visibilitychange: false,
+      narmal: '/images/favicon.ico',
+      hidden: '/images/failure.ico',
+      show_text: '(/≧▽≦/)咦！又好了！',
+      hide_text: '(●—●)喔哟，崩溃啦！'
+    }
+  };
+</script>
+
+
+
+  
+    <script type="text/javascript" src="https://cdn.bootcss.com/jquery/2.1.3/jquery.min.js"></script>
+
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2020/04/15/kafka/">
+
+
+
+
+
+  <title>Kafka集群部署及操作 | Hi, Onigiri</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-mars"></i> <br>
+            
+            链接
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-rocket"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+      <li class="menu-item search">
+          <form class="search-form">
+            <input name="keyword" type="text" class="search-input" placeholder="站内搜索">
+            <button type="submit" class="search-submit"><i class="fa fa-search"></i></button>
+          </form>
+      </li>
+      <li class="menu-item online"><span id="online-count">无</span>人在线</li>
+    </ul>
+  
+
+  
+</nav>
+
+<div class="site-brand-wrapper" style="background-image: url(/images/header-newgame.jpg)">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <div class="brand">
+        <span class="logo-line-before"><i></i></span>
+        <div class="site-title">
+          <div id="animate" class="animate">
+            <span>H</span><span>i</span><span>,</span><span> </span><span>O</span><span>n</span><span>i</span><span>g</span><span>i</span><span>r</span><span>i</span>
+          </div>
+          <div id="guide" class="guide">
+            <span>H</span><span>i</span><span>,</span><span> </span><span>O</span><span>n</span><span>i</span><span>g</span><span>i</span><span>r</span><span>i</span>
+          </div>
+        </div>
+        <span class="logo-line-after"><i></i></span>
+      </div>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+<div class="site-master" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-master-avatar" itemprop="image" src="/images/aoba.jpg" alt="John Doe">
+    <h2 class="site-master-description" itemprop="description">
+        <font color="#FF4500">蒲烧鳗鱼饭团</font> <font color="#1E90FF">后端开发萌新</font> <s>动漫博主</s>
+    </h2>
+</div>
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-date">
+			<div class="post-month">04月</div>
+			<div class="post-day">15</div>
+	</div>
+  
+
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/15/kafka/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="John Doe">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/aoba.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hi, Onigiri">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Kafka集群部署及操作</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-04-15T01:14:59+08:00">
+                2020-04-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="集群基础结构"><a href="#集群基础结构" class="headerlink" title="集群基础结构"></a>集群基础结构</h2><h3 id="集群服务器"><a href="#集群服务器" class="headerlink" title="集群服务器"></a>集群服务器</h3><p>奇数数量的 kafka 服务器，作为 kafka broker 节点。<br>奇数数量的 zookeeper 服务器。<br>kafka 和 zookeeper 服务器数量可以不一致，目前生产环境中 zookeeper 是 3 节点的集群，kafka 是 5 节点集群。</p>
+<h3 id="验证集群结构"><a href="#验证集群结构" class="headerlink" title="验证集群结构"></a>验证集群结构</h3><p>如果知道 zookeeper 地址，可通过如下方式查看 kafka 集群结构；如果知道 kafka 地址，在 kafka 配置文件 /opt/kafka/config/server.properties 中也能找到依赖的 zookeeper 地址。</p>
+<blockquote>
+<p>[zk: localhost:2181(CONNECTED) 8] ls /brokers/ids<br>[3, 4, 5, 6]</p>
+</blockquote>
+<p>可见集群有 4 个 brokers（brokers 即 kafka 实例、kafka 服务器），brokers id 为 3/4/5/6，此处 id 与 kafka 服务器配置文件 /opt/kafka/config/server.properties 中的 broker.id 配置对应。</p>
+<p>分别获取 4 个 brokers 的运行信息（主机、端口、版本等），可见 kafka 4 个实例为 10.100/10.101/10.102/10.103</p>
+<blockquote>
+<p>[zk: localhost:2181(CONNECTED) 9] get /brokers/ids/3<br>{“jmx_port”:9999,”timestamp”:”1576064681798”,”endpoints”:[“PLAINTEXT://10.10.10.100:9092”],”host”:”10.10.10.100”,”version”:3,”port”:9092}</p>
+</blockquote>
+<blockquote>
+<p>[zk: localhost:2181(CONNECTED) 10] get /brokers/ids/4<br>{“jmx_port”:9999,”timestamp”:”1576066262909”,”endpoints”:[“PLAINTEXT://10.10.10.101:9092”],”host”:”10.10.10.101”,”version”:3,”port”:9092}</p>
+</blockquote>
+<blockquote>
+<p>[zk: localhost:2181(CONNECTED) 11] get /brokers/ids/5<br>{“jmx_port”:9999,”timestamp”:”1576065052511”,”endpoints”:[“PLAINTEXT://10.10.10.102:9092”],”host”:”10.10.10.102”,”version”:3,”port”:9092}</p>
+</blockquote>
+<blockquote>
+<p>[zk: localhost:2181(CONNECTED) 12] get /brokers/ids/6<br>{“jmx_port”:9999,”timestamp”:”1576118269417”,”endpoints”:[“PLAINTEXT://10.10.10.103:9092”],”host”:”10.10.10.103”,”version”:3,”port”:9092}</p>
+</blockquote>
+<h2 id="命令、配置及日志"><a href="#命令、配置及日志" class="headerlink" title="命令、配置及日志"></a>命令、配置及日志</h2><p>约定 kafka 在 /opt/kafka 下，zookeeper 在 /opt/zookeeper 下。</p>
+<p>依赖的 zookeeper 操作：<br>启动：<code>/opt/zookeeper/bin/zkServer.sh start</code><br>停止：<code>/opt/zookeeper/bin/zkServer.sh stop</code></p>
+<p>kafka 操作：</p>
+<p>启动：<code>/opt/kafka/bin/kafka-server-start.sh -daemon /opt/kafka/config/server.properties</code><br>停止：<code>/opt/kafka/bin/kafka-server-stop.sh</code><br>重启：先停止后启动，修改配置后无法平滑重启</p>
+<p>配置路径：/opt/kafka/config/server.properties<br>基本配置属性：</p>
+<blockquote>
+<p>host.name=本机 IP<br>broker.id=任意数字，必须保证集群中唯一<br>zookeeper.connect=zookeeper服务器列表（使用逗号分割）<br>auto.create.topics.enable=false（线上是设置禁止自动创建 topic，新建 topic 需要申请手动添加）</p>
+</blockquote>
+<p>数据日志（保存有消息内容，不可手动删除）：<br>/data/kafka/7000-0（topic-分区）</p>
+<p>系统日志：<br>/opt/kafka/kafka-logs</p>
+<h2 id="基础概念"><a href="#基础概念" class="headerlink" title="基础概念"></a>基础概念</h2><h3 id="controller-选举"><a href="#controller-选举" class="headerlink" title="controller 选举"></a>controller 选举</h3><p><img src="kafka-controller.jpg" alt="kafka-controller"></p>
+<h3 id="consumer-与分区"><a href="#consumer-与分区" class="headerlink" title="consumer 与分区"></a>consumer 与分区</h3><p>每个分区，不能被同一消费组的多个 consumer 进程消费<br>每个分区，可以同时被不同消费组的多个 consumer 进程消费<br><img src="consumer-partition.jpg" alt="consumer-partition"></p>
+<h2 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h2><h3 id="查看kafka-topic列表"><a href="#查看kafka-topic列表" class="headerlink" title="查看kafka topic列表"></a>查看kafka topic列表</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/opt/kafka/bin/kafka-topics.sh --zookeeper 10.10.10.151:2181 --list</span><br></pre></td></tr></table></figure>
+
+<p>此命令查看所有 topic，会包含已创建但未消费的 topic。</p>
+<p>如想知道活跃 topic，需要执行 “3. 查看 consumer 组列表”，再遍历所有 consumer 列表，依次执行 “4. 查看 consumer 详情”，提取出对应的 topic，汇总去重后即为所有活跃的 topic。<br>没有直接命令可查看活跃的 topic。</p>
+<h3 id="查看-topic-详情"><a href="#查看-topic-详情" class="headerlink" title="查看 topic 详情"></a>查看 topic 详情</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/opt/kafka/bin/kafka-topics.sh --zookeeper 10.10.10.151:2181 --describe --topic 7000</span><br></pre></td></tr></table></figure>
+
+<p>注意：一个 topic 的不同分区，可以分布在不同 broker 上，如上图分区 0 的副本分布在 356，分区 2 的副本分布在 346</p>
+<p><img src="topic-info.png" alt="topic-info"></p>
+<h3 id="查看-consumer-组列表"><a href="#查看-consumer-组列表" class="headerlink" title="查看 consumer 组列表"></a>查看 consumer 组列表</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/opt/kafka/bin/kafka-consumer-groups.sh --new-consumer --bootstrap-server 10.10.10.151:9092 --list</span><br></pre></td></tr></table></figure>
+
+<p>输出示例</p>
+<blockquote>
+<p>base\Module1\consumer\Class1<br>base\Module2\consumer\Class2<br>base\Module3\consumer\Class3<br>……</p>
+</blockquote>
+<p>这里的输出为消费组的 group.id，在我们的项目中，consumer 启动时会将代码路径设置为 group.id。</p>
+<h3 id="查看-consumer-详情"><a href="#查看-consumer-详情" class="headerlink" title="查看 consumer 详情"></a>查看 consumer 详情</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/opt/kafka/bin/kafka-consumer-groups.sh --new-consumer --bootstrap-server 10.10.10.151:9092 --describe --group &quot;base\Es\consumer\Group&quot;</span><br></pre></td></tr></table></figure>
+
+<p>输出示例</p>
+<table>
+<thead>
+<tr>
+<th>GROUP</th>
+<th>TOPIC</th>
+<th>PARTITION</th>
+<th>CURRENT-OFFSET</th>
+<th>LOG-END-OFFSET</th>
+<th>LAG</th>
+<th>OWNER</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>base\Es\consumer\Group</td>
+<td>6030</td>
+<td>0</td>
+<td>70213</td>
+<td>70213</td>
+<td>0</td>
+<td>rdkafka_/10.10.10.110</td>
+</tr>
+<tr>
+<td>base\Es\consumer\Group</td>
+<td>16001</td>
+<td>0</td>
+<td>unknown</td>
+<td>0</td>
+<td>unknown</td>
+<td>rdkafka_/10.10.10.110</td>
+</tr>
+</tbody></table>
+<p>CURRENT-OFFSET：当前消费位置<br>LOG-END-OFFSET：末尾位置<br>两者相减即为 LAG 堆积数量</p>
+<p>可以查看到消费的 topic 和分区、偏移量等数据。</p>
+<p>注意：消费组包含一组相同的 consumer。如 base\Es\consumer\Group 指消费组，启动的 N 个 consumer 进程属于这个消费组，这些 consumer 进程共同从这个 topic 的不同分区消费数据。<br>一个分区不会被一个消费者群组内的多个 consumer 消费，但是可以分别被不同消费者群组内的多个 consumer 消费，示意图如下：</p>
+<p><img src="consumer-group.png" alt="consumer-group"></p>
+<h3 id="查看某个-topic-消息"><a href="#查看某个-topic-消息" class="headerlink" title="查看某个 topic 消息"></a>查看某个 topic 消息</h3><p>查看整个 topic 所有消息（简化、高级的 API）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server 10.10.10.151:9092 --zookeeper 10.10.10.151:2181 --topic 7015</span><br></pre></td></tr></table></figure>
+
+<p>加上 <code>--from-beginnin</code> 参数则查看全部消息，不加则从尾部开始消费（只能看到新消息）</p>
+<h3 id="查看某个-topic-特定分区消息（复杂、低级的-API）："><a href="#查看某个-topic-特定分区消息（复杂、低级的-API）：" class="headerlink" title="查看某个 topic 特定分区消息（复杂、低级的 API）："></a>查看某个 topic 特定分区消息（复杂、低级的 API）：</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/opt/kafka/bin/kafka-simple-consumer-shell.sh --broker-list 10.10.10.151:9092 --max-messages 10 --partition 0 --print-offsets --topic 1000 --offset 613745 --no-wait-at-logend</span><br></pre></td></tr></table></figure>
+
+<p>max-messages 为每次执行命令返回的消息条数<br>partition 为需要查看消息的特定分区<br>offset 为消息偏移量，查看该偏移量之后的消息</p>
+<h3 id="创建-topic"><a href="#创建-topic" class="headerlink" title="创建 topic"></a>创建 topic</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/opt/kafka/bin/kafka-topics.sh --zookeeper 10.10.10.151:2181 --create --topic 1000 --partitions 4 --replication-factor 3</span><br></pre></td></tr></table></figure>
+
+<p>partitions 为分区数<br>replication-factor 为复制系数、有多少份副本（即 1 份首领副本，N-1 份跟随者副本）</p>
+<h2 id="kafka-管理后台设计"><a href="#kafka-管理后台设计" class="headerlink" title="kafka 管理后台设计"></a>kafka 管理后台设计</h2><p>mysql kafka_monitor 库保存所有的 topic、consumer 数据，数据来源是研发申请时人工填写。</p>
+<p>mongo kafka_monitor 库保存活跃的 topic、consumer 数据，数据来源于定时任务脚本，脚本定期执行 “查看 consumer 组列表 -&gt; 遍历所有 consumer 列表 -&gt; 查看 consumer 详情” 命令，提取到需要的统计数据后更新 mongo（故只保存活跃 topic 和 consumer 信息）。</p>
+<h2 id="Q-amp-A"><a href="#Q-amp-A" class="headerlink" title="Q&amp;A"></a>Q&amp;A</h2><p>Q：某个分区可以被多个 consumer 消费，那么 offset 是和 consumer 相关的？每个 consumer 单独记录自己的 offset？<br>A：是的，是的，所以每个 consumer 启动都能找到自己的 offset，而且数据保存在 __consumer_offsets 内置 topic 上</p>
+<p>Q：zookeeper 里的 state 数据含义</p>
+<blockquote>
+<p>[zk: localhost:2181(CONNECTED) 3] get /brokers/topics/7000/partitions/2/state<br>{“controller_epoch”:318,”leader”:4,”version”:1,”leader_epoch”:282,”isr”:[4,5,3]}</p>
+</blockquote>
+<p>A：<br><strong>controller_epoch：</strong>kafka 集群中的控制器选举次数，原有控制器下线后，所有 broker 进行控制器选举，选举一个 broker 成为 controller，该 broker 参与分区首领副本选举。每选出一次控制器，controller_epoch++，如果 broker 收到由控制器发出的包含较旧 epoch 的消息，就会忽略这些消息。<br><strong>leader：</strong>该 topic 的分区首领副本所在的 broker_id<br><strong>version：</strong>默认为 1<br><strong>leader_epoch：</strong>该 topic 的分区首领副本选举次数<br><strong>isr：</strong>保持同步的副本（首领副本所在的 broker 宕机后，有资格成为新的首领副本的副本）所在的 broker_id</p>
+<h2 id="问题排查记录"><a href="#问题排查记录" class="headerlink" title="问题排查记录"></a>问题排查记录</h2><h3 id="启动-consumer-消费不到数据"><a href="#启动-consumer-消费不到数据" class="headerlink" title="启动 consumer 消费不到数据"></a>启动 consumer 消费不到数据</h3><p>查看 consumer 日志，是否分配到分区<br>查看 kafka 消费组列表，该 consumer 是否存在：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/opt/kafka/bin/kafka-consumer-groups.sh --new-consumer --bootstrap-server 10.10.10.151:9092 --list</span><br></pre></td></tr></table></figure>
+
+<p>注意没有命令可以直接按照 topic 查找对应的 consumer！<br>只能获取全部 consumer 列表 -&gt; 遍历列表获取全部 consumer 详情 -&gt; 过滤 topic 得到结果 consumer。</p>
+<h3 id="检查消息是否正确发送"><a href="#检查消息是否正确发送" class="headerlink" title="检查消息是否正确发送"></a>检查消息是否正确发送</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server 10.10.10.151:9092 --zookeeper 10.10.10.151:2181 --from-beginnin --topic 1000</span><br></pre></td></tr></table></figure>
+
+<p>看看能否找到发送过的消息</p>
+<h3 id="nginx-状态码-499，访问接口慢最终超时"><a href="#nginx-状态码-499，访问接口慢最终超时" class="headerlink" title="nginx 状态码 499，访问接口慢最终超时"></a>nginx 状态码 499，访问接口慢最终超时</h3><p>可能是 kafka 服务未正常运行引起，ps 检查 kafka 运行状态；<br>向 kafka 发送测试消息。</p>
+<h3 id="consumer-进程数量优化"><a href="#consumer-进程数量优化" class="headerlink" title="consumer 进程数量优化"></a>consumer 进程数量优化</h3><p>通过定时脚本执行 “查看 consumer 详情” 命令，在每次的执行结果中对 CURRENT-OFFSET 求和得到 SUM 并记录，两次 SUM 差值 / 脚本运行周期 即为该 consumer 消费速度，同理 LOG-END-OFFSET 可计算出该 consumer 订阅的所有 topic 的消息产生速度。<br>如消费速度明显小于产生速度，考虑增加 consumer 进程、增加 topic 分区。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+      <div class="post-share">分享到：</div>
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/10/09/redis/" rel="next" title="Redis 技术专题">
+                <i class="fa fa-chevron-left"></i> Redis 技术专题
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/card.jpg" alt="John Doe">
+            
+              <p class="site-author-name" itemprop="name">蒲烧鳗鱼饭团</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/lzjohnny" target="_blank" title="GitHub" data-balloon="GitHub" data-balloon-pos="up">
+                    
+                      <i class="fa fa-fw fa-github"></i></a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="https://weibo.com/lzjohnny95" target="_blank" title="Weibo" data-balloon="Weibo" data-balloon-pos="up">
+                    
+                      <i class="fa fa-fw fa-weibo"></i></a>
+                </span>
+              
+            
+          </div>
+
+          
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+            
+
+          </nav>
+
+          
+          
+            <div class="cc-license motion-element" itemprop="license">
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" target="_blank">
+                <img src="/images/cc-by-nc-sa.png" alt="Creative Commons">
+              </a>
+            </div>
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#集群基础结构"><span class="nav-number">1.</span> <span class="nav-text">集群基础结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#集群服务器"><span class="nav-number">1.1.</span> <span class="nav-text">集群服务器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#验证集群结构"><span class="nav-number">1.2.</span> <span class="nav-text">验证集群结构</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#命令、配置及日志"><span class="nav-number">2.</span> <span class="nav-text">命令、配置及日志</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#基础概念"><span class="nav-number">3.</span> <span class="nav-text">基础概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#controller-选举"><span class="nav-number">3.1.</span> <span class="nav-text">controller 选举</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#consumer-与分区"><span class="nav-number">3.2.</span> <span class="nav-text">consumer 与分区</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#常用命令"><span class="nav-number">4.</span> <span class="nav-text">常用命令</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#查看kafka-topic列表"><span class="nav-number">4.1.</span> <span class="nav-text">查看kafka topic列表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#查看-topic-详情"><span class="nav-number">4.2.</span> <span class="nav-text">查看 topic 详情</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#查看-consumer-组列表"><span class="nav-number">4.3.</span> <span class="nav-text">查看 consumer 组列表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#查看-consumer-详情"><span class="nav-number">4.4.</span> <span class="nav-text">查看 consumer 详情</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#查看某个-topic-消息"><span class="nav-number">4.5.</span> <span class="nav-text">查看某个 topic 消息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#查看某个-topic-特定分区消息（复杂、低级的-API）："><span class="nav-number">4.6.</span> <span class="nav-text">查看某个 topic 特定分区消息（复杂、低级的 API）：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#创建-topic"><span class="nav-number">4.7.</span> <span class="nav-text">创建 topic</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#kafka-管理后台设计"><span class="nav-number">5.</span> <span class="nav-text">kafka 管理后台设计</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Q-amp-A"><span class="nav-number">6.</span> <span class="nav-text">Q&amp;A</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#问题排查记录"><span class="nav-number">7.</span> <span class="nav-text">问题排查记录</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#启动-consumer-消费不到数据"><span class="nav-number">7.1.</span> <span class="nav-text">启动 consumer 消费不到数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#检查消息是否正确发送"><span class="nav-number">7.2.</span> <span class="nav-text">检查消息是否正确发送</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#nginx-状态码-499，访问接口慢最终超时"><span class="nav-number">7.3.</span> <span class="nav-text">nginx 状态码 499，访问接口慢最终超时</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#consumer-进程数量优化"><span class="nav-number">7.4.</span> <span class="nav-text">consumer 进程数量优化</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-image"></div>
+      <div class="footer-inner">
+        <p>博客已萌萌哒运行<span id="since"></span><span class="my-face">(●'◡'●)ﾉ♥</span></p>
+<p></p>
+
+<p>© <span itemprop="copyrightYear">2020</span> Hi, Onigiri.
+    由 <a href="https://hexo.io/" target="_blank" class="external" rel="nofollow">Hexo</a> 强力驱动.
+    Theme By <a href="https://github.com/DIYgod/hexo-theme-sagiri" target="_blank" class="external" rel="nofollow">Sagiri</a>
+</p>
+<p>Made with <i class="fa fa-heart throb" style="color: #d43f57;"></i> by <span class="author" itemprop="copyrightHolder">蒲烧鳗鱼饭团</span></p>
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    <canvas id="evanyou"></canvas>
+
+    
+
+  </div>
+
+  <script type="text/javascript" src="/js/sagiri.min.js?v=0.0.5"></script>
+
+  
+
+
+
+
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

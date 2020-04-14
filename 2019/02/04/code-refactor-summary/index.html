@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+
+
+
+
+<html class="theme-next pisces" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link href="https://cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+
+    
+  
+
+  
+    
+    
+    <link href="//fonts.cat.net/css?family=Sigmar One:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+  
+
+<link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.css" rel="stylesheet" type="text/css">
+
+
+
+  
+
+<link href="https://cdn.bootcss.com/social-share.js/1.0.9/css/share.min.css" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=0.0.5" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=0.0.5">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico?v=0.0.5">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=0.0.5" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="blog,php,back-end">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="一、原始代码问题1. 代码缺乏分层结构(1) 业务逻辑完全在Controller层中(2) 在Controller层直接执行SQL(3) 在Model层接收请求参数 2.  安全性缺失(1) 使用请求参数直接拼接SQL(2) 用户数据未经处理直接进入数据库 3. 可读性差(1) 单个方法数百行(2) 有大量功能相近的重复性代码(3) 滥用静态方法(4) 通过接收参数，使用call_func动态调用">
+<meta property="og:type" content="article">
+<meta property="og:title" content="代码重构回顾">
+<meta property="og:url" content="http://yoursite.com/2019/02/04/code-refactor-summary/index.html">
+<meta property="og:site_name" content="Hi, Onigiri">
+<meta property="og:description" content="一、原始代码问题1. 代码缺乏分层结构(1) 业务逻辑完全在Controller层中(2) 在Controller层直接执行SQL(3) 在Model层接收请求参数 2.  安全性缺失(1) 使用请求参数直接拼接SQL(2) 用户数据未经处理直接进入数据库 3. 可读性差(1) 单个方法数百行(2) 有大量功能相近的重复性代码(3) 滥用静态方法(4) 通过接收参数，使用call_func动态调用">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2020-04-14T16:21:41.325Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="代码重构回顾">
+<meta name="twitter:description" content="一、原始代码问题1. 代码缺乏分层结构(1) 业务逻辑完全在Controller层中(2) 在Controller层直接执行SQL(3) 在Model层接收请求参数 2.  安全性缺失(1) 使用请求参数直接拼接SQL(2) 用户数据未经处理直接进入数据库 3. 可读性差(1) 单个方法数百行(2) 有大量功能相近的重复性代码(3) 滥用静态方法(4) 通过接收参数，使用call_func动态调用">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '0.0.5',
+    sidebar: {"position":"right","display":"always","offset":52,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    since: '1/20/2019 11:30:00',
+    onlineAPI: '',
+    googleAnalytics: '',
+    site: {
+      title: 'Hi, Onigiri',
+      subtitle: '',
+      author: 'John Doe'
+    },
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    leancloud: {
+      enable: false,
+      appID: '',
+      appKey: ''
+    },
+    favicon: {
+      visibilitychange: false,
+      narmal: '/images/favicon.ico',
+      hidden: '/images/failure.ico',
+      show_text: '(/≧▽≦/)咦！又好了！',
+      hide_text: '(●—●)喔哟，崩溃啦！'
+    }
+  };
+</script>
+
+
+
+  
+    <script type="text/javascript" src="https://cdn.bootcss.com/jquery/2.1.3/jquery.min.js"></script>
+
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/02/04/code-refactor-summary/">
+
+
+
+
+
+  <title>代码重构回顾 | Hi, Onigiri</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-mars"></i> <br>
+            
+            链接
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-rocket"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+      <li class="menu-item search">
+          <form class="search-form">
+            <input name="keyword" type="text" class="search-input" placeholder="站内搜索">
+            <button type="submit" class="search-submit"><i class="fa fa-search"></i></button>
+          </form>
+      </li>
+      <li class="menu-item online"><span id="online-count">无</span>人在线</li>
+    </ul>
+  
+
+  
+</nav>
+
+<div class="site-brand-wrapper" style="background-image: url(/images/header-newgame.jpg)">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <div class="brand">
+        <span class="logo-line-before"><i></i></span>
+        <div class="site-title">
+          <div id="animate" class="animate">
+            <span>H</span><span>i</span><span>,</span><span> </span><span>O</span><span>n</span><span>i</span><span>g</span><span>i</span><span>r</span><span>i</span>
+          </div>
+          <div id="guide" class="guide">
+            <span>H</span><span>i</span><span>,</span><span> </span><span>O</span><span>n</span><span>i</span><span>g</span><span>i</span><span>r</span><span>i</span>
+          </div>
+        </div>
+        <span class="logo-line-after"><i></i></span>
+      </div>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+<div class="site-master" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-master-avatar" itemprop="image" src="/images/aoba.jpg" alt="John Doe">
+    <h2 class="site-master-description" itemprop="description">
+        <font color="#FF4500">蒲烧鳗鱼饭团</font> <font color="#1E90FF">后端开发萌新</font> <s>动漫博主</s>
+    </h2>
+</div>
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-date">
+			<div class="post-month">02月</div>
+			<div class="post-day">04</div>
+	</div>
+  
+
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/02/04/code-refactor-summary/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="John Doe">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/aoba.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hi, Onigiri">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">代码重构回顾</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-04T19:57:53+08:00">
+                2019-02-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="一、原始代码问题"><a href="#一、原始代码问题" class="headerlink" title="一、原始代码问题"></a>一、原始代码问题</h2><h5 id="1-代码缺乏分层结构"><a href="#1-代码缺乏分层结构" class="headerlink" title="1. 代码缺乏分层结构"></a>1. 代码缺乏分层结构</h5><p>(1) 业务逻辑完全在Controller层中<br>(2) 在Controller层直接执行SQL<br>(3) 在Model层接收请求参数</p>
+<h5 id="2-安全性缺失"><a href="#2-安全性缺失" class="headerlink" title="2.  安全性缺失"></a>2.  安全性缺失</h5><p>(1) 使用请求参数直接拼接SQL<br>(2) 用户数据未经处理直接进入数据库</p>
+<h5 id="3-可读性差"><a href="#3-可读性差" class="headerlink" title="3. 可读性差"></a>3. 可读性差</h5><p>(1) 单个方法数百行<br>(2) 有大量功能相近的重复性代码<br>(3) 滥用静态方法<br>(4) 通过接收参数，使用call_func动态调用业务方法<br>(5) 存在非常复杂的SQL</p>
+<h5 id="4-继承混乱"><a href="#4-继承混乱" class="headerlink" title="4. 继承混乱"></a>4. 继承混乱</h5><p>存在多个类似的基类，www/api/m站交叉继承</p>
+<h2 id="二、分步进行重构"><a href="#二、分步进行重构" class="headerlink" title="二、分步进行重构"></a>二、分步进行重构</h2><h5 id="1-构建-controller-service-business-model-分层结构"><a href="#1-构建-controller-service-business-model-分层结构" class="headerlink" title="1. 构建 controller-service-business-model 分层结构"></a>1. 构建 controller-service-business-model 分层结构</h5><p>controller - 参数接收，调用srv、biz层业务代码，返回数据<br>service    - 调用各个业务的biz完成业务数据收集和格式拼接<br>business   - 按业务模块划分，每个biz独立负责业务逻辑，接受参数并返回数据<br>model      - 只进行数据查询</p>
+<p>具体分为两步：</p>
+<ol>
+<li>事先为biz构建数个主要业务方法，尽可能迁移拆分原集中在controller中的业务逻辑到这些方法中，如果必须增加方法时额外记录，确保biz中的方法内聚性较高，尽量避免重复逻辑。</li>
+<li>清理biz层、model层接收请求参数，上步中仅拆分代码，会导致部分使用了请求参数_REQUEST、_GET等的方法被划分到biz、model中。清理代码使参数改为从上层后获取传入biz、model层</li>
+</ol>
+<p>同时应当制定流程规范确保新增代码满足：</p>
+<ul>
+<li>业务逻辑集中在biz、每个biz属于一种业务，业务间相对独立，使每个biz高内聚，biz之间低耦合</li>
+<li>不允许跨层调用：ctrl、srv层不允许操作db、只能调用不同biz再拼装数据以实现业务逻辑</li>
+<li>不允许跨模块调用：每个biz模块不允许调用其他模块的model，再次确保每块业务逻辑独立</li>
+</ul>
+<p>难点：<br>从多处业务代码中抽取公共方法需要经验，抽取的公共方法覆盖的业务较少则未起到提取公共方法的目的，覆盖过多会使公共方法过于抽象、缺少共有逻辑。<br>并且需要熟悉业务逻辑，抽取过程中完全改变了原有结构，只能通过接口测试和业务测试验证。</p>
+<p>另外在请求参数清理过程中，由于底层多数是通用方法，一个方法可能在srv、ctrl层被多次调用，不需要每处调用都传入请求参数，根据业务仅在必要时传入。根据业务需要选择作为可选参数或是封装在数组中传入。</p>
+<p>另外需要说明，Model层的定位一般有两种：<br>(1) 数据逻辑：调用Model底层相应方法实现不同增删改查逻辑。Model不对应数据表，仅提供操作方法。输入/输出数据均通过参数/返回值进行操作<br>(2) 数据对象：Model对应数据表，即ActiveRecord的使用方式。输入/输出数据均通过Model对象属性访问<br>前者代码风格更偏向于面向过程，后者代码风格偏向于面向对象，实际在使用中两种方式均有使用。</p>
+<h5 id="2-降低前台SQL复杂程度，使用统一方法代替拼接SQL"><a href="#2-降低前台SQL复杂程度，使用统一方法代替拼接SQL" class="headerlink" title="2. 降低前台SQL复杂程度，使用统一方法代替拼接SQL"></a>2. 降低前台SQL复杂程度，使用统一方法代替拼接SQL</h5><p>安全性问题在MVC分层清晰、SQL采用参数绑定后已经基本解决，但是model层DB查询的方式不统一，比如大多数使用Yii的$db-&gt;createCommand方式直接写SQL，少数使用Query等封装，可读性和复用性较差。</p>
+<p>前台代码严格禁止连表查询，额外设置ElasticSearch服务，提前将数据导入ES索引中，需要连表查询时改为从ES索引中查询数据。ElasticSearch服务可以以较好的性能和较低的改造难度兼容原有的连表查询业务逻辑。</p>
+<h5 id="3-通过重构增加代码可读性"><a href="#3-通过重构增加代码可读性" class="headerlink" title="3. 通过重构增加代码可读性"></a>3. 通过重构增加代码可读性</h5><p>替换部分非必要的静态方式为非静态方法，工具类适合使用静态方法<br>尽量避免使用用户参数进行call_func，写清判断条件，使调用逻辑明确<br>需要连表时全部走elasticsearch查询</p>
+<h5 id="4-每个站点统一继承的基类"><a href="#4-每个站点统一继承的基类" class="headerlink" title="4. 每个站点统一继承的基类"></a>4. 每个站点统一继承的基类</h5><p>明确基类职责，合并类似功能的基类统一继承：</p>
+<ul>
+<li>controller - 获取请求参数，正常返回/异常返回（包括HTML和Json），接口调用统计，接口参数基础</li>
+<li>service - 签名参数校验</li>
+<li>business - 获取Redis连接。Redis在业务上主要是缓存使用，但应当视同数据库，仅在biz层进行操作</li>
+<li>model - model基类分为组件级基类和业务级基类：<br>组件级基类：数据操作基础字段校验，在Yii DAO基础上封装单条/多条增删改查方法，读写分离支持<br>业务级基类：根据条件数组操作单条多条数据，接收参数、返回数据格式业务友好</li>
+</ul>
+<h2 id="三、重构结果"><a href="#三、重构结果" class="headerlink" title="三、重构结果"></a>三、重构结果</h2><p>在重构前代码已经被业务研发广为诟病，原有基本处于无法维护的状态，新增业务功能只能另外新增方法，代码复制粘贴现象严重，无论是开发还是测试影响范围不可控。重构后业务代码分层清晰、模块上下级调用较为合理，为后续docker服务化、数据库无用表、无用字段清理打下基础。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+      <div class="post-share">分享到：</div>
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/01/06/hello-world/" rel="next" title="Hello World">
+                <i class="fa fa-chevron-left"></i> Hello World
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/06/web-trouble-shooting/" rel="prev" title="Nginx 与网站问题排查">
+                Nginx 与网站问题排查 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/card.jpg" alt="John Doe">
+            
+              <p class="site-author-name" itemprop="name">蒲烧鳗鱼饭团</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/lzjohnny" target="_blank" title="GitHub" data-balloon="GitHub" data-balloon-pos="up">
+                    
+                      <i class="fa fa-fw fa-github"></i></a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="https://weibo.com/lzjohnny95" target="_blank" title="Weibo" data-balloon="Weibo" data-balloon-pos="up">
+                    
+                      <i class="fa fa-fw fa-weibo"></i></a>
+                </span>
+              
+            
+          </div>
+
+          
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+            
+
+          </nav>
+
+          
+          
+            <div class="cc-license motion-element" itemprop="license">
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" target="_blank">
+                <img src="/images/cc-by-nc-sa.png" alt="Creative Commons">
+              </a>
+            </div>
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#一、原始代码问题"><span class="nav-number">1.</span> <span class="nav-text">一、原始代码问题</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#1-代码缺乏分层结构"><span class="nav-number">1.0.0.1.</span> <span class="nav-text">1. 代码缺乏分层结构</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#2-安全性缺失"><span class="nav-number">1.0.0.2.</span> <span class="nav-text">2.  安全性缺失</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#3-可读性差"><span class="nav-number">1.0.0.3.</span> <span class="nav-text">3. 可读性差</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#4-继承混乱"><span class="nav-number">1.0.0.4.</span> <span class="nav-text">4. 继承混乱</span></a></li></ol></li></ol><li class="nav-item nav-level-2"><a class="nav-link" href="#二、分步进行重构"><span class="nav-number">2.</span> <span class="nav-text">二、分步进行重构</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#1-构建-controller-service-business-model-分层结构"><span class="nav-number">2.0.0.1.</span> <span class="nav-text">1. 构建 controller-service-business-model 分层结构</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#2-降低前台SQL复杂程度，使用统一方法代替拼接SQL"><span class="nav-number">2.0.0.2.</span> <span class="nav-text">2. 降低前台SQL复杂程度，使用统一方法代替拼接SQL</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#3-通过重构增加代码可读性"><span class="nav-number">2.0.0.3.</span> <span class="nav-text">3. 通过重构增加代码可读性</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#4-每个站点统一继承的基类"><span class="nav-number">2.0.0.4.</span> <span class="nav-text">4. 每个站点统一继承的基类</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#三、重构结果"><span class="nav-number">3.</span> <span class="nav-text">三、重构结果</span></a></li></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-image"></div>
+      <div class="footer-inner">
+        <p>博客已萌萌哒运行<span id="since"></span><span class="my-face">(●'◡'●)ﾉ♥</span></p>
+<p></p>
+
+<p>© <span itemprop="copyrightYear">2020</span> Hi, Onigiri.
+    由 <a href="https://hexo.io/" target="_blank" class="external" rel="nofollow">Hexo</a> 强力驱动.
+    Theme By <a href="https://github.com/DIYgod/hexo-theme-sagiri" target="_blank" class="external" rel="nofollow">Sagiri</a>
+</p>
+<p>Made with <i class="fa fa-heart throb" style="color: #d43f57;"></i> by <span class="author" itemprop="copyrightHolder">蒲烧鳗鱼饭团</span></p>
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    <canvas id="evanyou"></canvas>
+
+    
+
+  </div>
+
+  <script type="text/javascript" src="/js/sagiri.min.js?v=0.0.5"></script>
+
+  
+
+
+
+
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

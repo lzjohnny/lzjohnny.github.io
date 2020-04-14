@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+
+
+
+
+<html class="theme-next pisces" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link href="https://cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+
+    
+  
+
+  
+    
+    
+    <link href="//fonts.cat.net/css?family=Sigmar One:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+  
+
+<link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.css" rel="stylesheet" type="text/css">
+
+
+
+  
+
+<link href="https://cdn.bootcss.com/social-share.js/1.0.9/css/share.min.css" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=0.0.5" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=0.0.5">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico?v=0.0.5">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=0.0.5" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="blog,php,back-end">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Master 节点操作导出现有配置，以便重新 init 时使用sudo kubectl -n kube-system get cm kubeadm-config -o yaml注意输出的内容不是标准 yaml 格式，仅供参考，不能作为 kubeadm init 的配置文件内容。 以下是准备好的 kubeadm-config.yaml 文件内容： 12345678910111213141516171">
+<meta property="og:type" content="article">
+<meta property="og:title" content="重建 K8S 集群">
+<meta property="og:url" content="http://yoursite.com/2019/09/30/rebuild-k8s-cluster/index.html">
+<meta property="og:site_name" content="Hi, Onigiri">
+<meta property="og:description" content="Master 节点操作导出现有配置，以便重新 init 时使用sudo kubectl -n kube-system get cm kubeadm-config -o yaml注意输出的内容不是标准 yaml 格式，仅供参考，不能作为 kubeadm init 的配置文件内容。 以下是准备好的 kubeadm-config.yaml 文件内容： 12345678910111213141516171">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2020-04-14T16:21:41.362Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="重建 K8S 集群">
+<meta name="twitter:description" content="Master 节点操作导出现有配置，以便重新 init 时使用sudo kubectl -n kube-system get cm kubeadm-config -o yaml注意输出的内容不是标准 yaml 格式，仅供参考，不能作为 kubeadm init 的配置文件内容。 以下是准备好的 kubeadm-config.yaml 文件内容： 12345678910111213141516171">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '0.0.5',
+    sidebar: {"position":"right","display":"always","offset":52,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    since: '1/20/2019 11:30:00',
+    onlineAPI: '',
+    googleAnalytics: '',
+    site: {
+      title: 'Hi, Onigiri',
+      subtitle: '',
+      author: 'John Doe'
+    },
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    leancloud: {
+      enable: false,
+      appID: '',
+      appKey: ''
+    },
+    favicon: {
+      visibilitychange: false,
+      narmal: '/images/favicon.ico',
+      hidden: '/images/failure.ico',
+      show_text: '(/≧▽≦/)咦！又好了！',
+      hide_text: '(●—●)喔哟，崩溃啦！'
+    }
+  };
+</script>
+
+
+
+  
+    <script type="text/javascript" src="https://cdn.bootcss.com/jquery/2.1.3/jquery.min.js"></script>
+
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/09/30/rebuild-k8s-cluster/">
+
+
+
+
+
+  <title>重建 K8S 集群 | Hi, Onigiri</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-mars"></i> <br>
+            
+            链接
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-rocket"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+      <li class="menu-item search">
+          <form class="search-form">
+            <input name="keyword" type="text" class="search-input" placeholder="站内搜索">
+            <button type="submit" class="search-submit"><i class="fa fa-search"></i></button>
+          </form>
+      </li>
+      <li class="menu-item online"><span id="online-count">无</span>人在线</li>
+    </ul>
+  
+
+  
+</nav>
+
+<div class="site-brand-wrapper" style="background-image: url(/images/header-newgame.jpg)">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <div class="brand">
+        <span class="logo-line-before"><i></i></span>
+        <div class="site-title">
+          <div id="animate" class="animate">
+            <span>H</span><span>i</span><span>,</span><span> </span><span>O</span><span>n</span><span>i</span><span>g</span><span>i</span><span>r</span><span>i</span>
+          </div>
+          <div id="guide" class="guide">
+            <span>H</span><span>i</span><span>,</span><span> </span><span>O</span><span>n</span><span>i</span><span>g</span><span>i</span><span>r</span><span>i</span>
+          </div>
+        </div>
+        <span class="logo-line-after"><i></i></span>
+      </div>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+<div class="site-master" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-master-avatar" itemprop="image" src="/images/aoba.jpg" alt="John Doe">
+    <h2 class="site-master-description" itemprop="description">
+        <font color="#FF4500">蒲烧鳗鱼饭团</font> <font color="#1E90FF">后端开发萌新</font> <s>动漫博主</s>
+    </h2>
+</div>
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-date">
+			<div class="post-month">09月</div>
+			<div class="post-day">30</div>
+	</div>
+  
+
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/09/30/rebuild-k8s-cluster/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="John Doe">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/aoba.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hi, Onigiri">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">重建 K8S 集群</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-09-30T08:12:16+08:00">
+                2019-09-30
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Master-节点操作"><a href="#Master-节点操作" class="headerlink" title="Master 节点操作"></a>Master 节点操作</h2><h3 id="导出现有配置，以便重新-init-时使用"><a href="#导出现有配置，以便重新-init-时使用" class="headerlink" title="导出现有配置，以便重新 init 时使用"></a>导出现有配置，以便重新 init 时使用</h3><p>sudo kubectl -n kube-system get cm kubeadm-config -o yaml<br>注意输出的内容不是标准 yaml 格式，仅供参考，不能作为 kubeadm init 的配置文件内容。</p>
+<p>以下是准备好的 kubeadm-config.yaml 文件内容：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">kubeadm.k8s.io/v1beta2</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">InitConfiguration</span></span><br><span class="line"><span class="attr">localAPIEndpoint:</span></span><br><span class="line"><span class="attr">  advertiseAddress:</span> <span class="number">10.10</span><span class="number">.10</span><span class="number">.140</span></span><br><span class="line"><span class="attr">  bindPort:</span> <span class="number">6443</span></span><br><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">kubeadm.k8s.io/v1beta2</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">ClusterConfiguration</span></span><br><span class="line"><span class="attr">dns:</span></span><br><span class="line"><span class="attr">  type:</span> <span class="string">CoreDNS</span></span><br><span class="line"><span class="attr">etcd:</span></span><br><span class="line"><span class="attr">  local:</span></span><br><span class="line"><span class="attr">    dataDir:</span> <span class="string">/var/lib/etcd</span></span><br><span class="line"><span class="attr">networking:</span></span><br><span class="line"><span class="attr">  dnsDomain:</span> <span class="string">cluster.local</span></span><br><span class="line"><span class="attr">  podSubnet:</span> <span class="number">10.244</span><span class="number">.0</span><span class="number">.0</span><span class="string">/16</span></span><br><span class="line"><span class="attr">  serviceSubnet:</span> <span class="number">10.1</span><span class="number">.0</span><span class="number">.0</span><span class="string">/16</span></span><br><span class="line"><span class="attr">kubernetesVersion:</span> <span class="string">v1.15.0</span></span><br><span class="line"><span class="attr">apiServer:</span></span><br><span class="line"><span class="attr">  extraArgs:</span></span><br><span class="line"><span class="attr">    authorization-mode:</span> <span class="string">Node,RBAC</span></span><br><span class="line"><span class="attr">  timeoutForControlPlane:</span> <span class="number">4</span><span class="string">m0s</span></span><br><span class="line"><span class="attr">controllerManager:</span></span><br><span class="line"><span class="attr">  extraArgs:</span></span><br><span class="line"><span class="attr">    "node-cidr-mask-size":</span> <span class="string">"20"</span></span><br><span class="line"><span class="attr">certificatesDir:</span> <span class="string">/etc/kubernetes/pki</span></span><br><span class="line"><span class="attr">imageRepository:</span> <span class="string">registry.aliyuncs.com/google_containers</span></span><br><span class="line"><span class="attr">clusterName:</span> <span class="string">kubernetes</span></span><br><span class="line"><span class="attr">scheduler:</span> <span class="string">&#123;&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>每个配置中必须包含 apiVersion、kind<br>注意 podSubnet、serviceSubnet 分别确定了整个集群中（并非某个 Node 节点）的 Service、Pods 的 IP 地址范围。</p>
+<p>可适当参考以下文档，以便查看示例、语法及合法配置内容：<br><a href="https://godoc.org/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta2" target="_blank" rel="noopener">https://godoc.org/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta2</a><br><a href="https://github.com/feiskyer/kubernetes-handbook/blob/master/deploy/kubeadm.md" target="_blank" rel="noopener">https://github.com/feiskyer/kubernetes-handbook/blob/master/deploy/kubeadm.md</a></p>
+<h3 id="清除原有配置"><a href="#清除原有配置" class="headerlink" title="清除原有配置"></a>清除原有配置</h3><p>执行以下命令进行清理，不必担心误删除配置，此处删除的越干净之后遇到的问题越少：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">kubeadm reset</span><br><span class="line">systemctl stop kubelet</span><br><span class="line">systemctl stop docker</span><br><span class="line">rm -rf /var/lib/cni/</span><br><span class="line">rm -rf /var/lib/kubelet/*</span><br><span class="line">rm -rf /var/lib/etcd</span><br><span class="line">rm -rf /run/flannel</span><br><span class="line">rm -rf /etc/cni/</span><br><span class="line">ifconfig cni0 down</span><br><span class="line">ifconfig flannel.1 down</span><br><span class="line">ifconfig docker0 down</span><br><span class="line">ip link delete cni0</span><br><span class="line">ip link delete flannel.1</span><br><span class="line">systemctl start docker</span><br></pre></td></tr></table></figure>
+
+<p>如果 etcd 部署在 master 节点上，可使用 rm -rf /var/lib/etcd 删除集群配置。<br>如果 etcd 使用独立服务器，可以使用 etdc 命令行工具 etcdctl rm –recursive registry 命令删除相关配置。<br>在其他参考资料中可能需要使用 brctl 命令，该命令在 bridge-utils 包中，可通过 yum 安装。但是只要执行过上述清理命令后就已经清理干净，不再需要重复使用 brctl 相关命令清理。</p>
+<h3 id="初始化主节点"><a href="#初始化主节点" class="headerlink" title="初始化主节点"></a>初始化主节点</h3><p>如果是初次部署需要提前拉取相应镜像，由于本次为重新部署不需要拉取镜像，直接执行初始化命令：<br>kubeadm init –config kubeadm-config.yaml</p>
+<p>按照提示将配置文件放到家目录下，原来 K8S 的集群配置在重建后已经失效，如跳过这步则会无权操作集群：<br>mkdir -p $HOME/.kube<br>sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config<br>sudo chown $(id -u):$(id -g) $HOME/.kube/config</p>
+<p>记录下 join 命令参数，以便后续 node 节点加入集群使用：<br>kubeadm join 10.10.10.140:6443 –token <your-token> <br>    –discovery-token-ca-cert-hash sha256:<your-ca-sha256></your-ca-sha256></your-token></p>
+<p>提示：<br>如果忘记该命令参数，可以通过以下方法查看：<br>kubeadm token list 可查看 token<br>openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2&gt;/dev/null | openssl dgst -sha256 -hex | sed ‘s/^.* //‘<br>可查看证书文件的 SHA256 值</p>
+<h3 id="检查主节点状态、部署网络插件"><a href="#检查主节点状态、部署网络插件" class="headerlink" title="检查主节点状态、部署网络插件"></a>检查主节点状态、部署网络插件</h3><p>kubectl get componentstatus<br>此时尚未创建 coredns，所以 kubectl get nodes 状态为 NotReady 是正常的。</p>
+<p>创建网络插件：<br>curl -O <a href="https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml" target="_blank" rel="noopener">https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml</a><br>kubectl apply -f kube-flannel.yml</p>
+<p>执行 kubectl get pods –all-namespaces，查看所有 Pods 处于 Running 状态，已经正常启动。<br>注意：如果 master 未完全清除原有配置，且修改了 PodCIDR，可能导致 IP 不一致导致 coredns 处于 ContainerCreating 状态，并报错：</p>
+<blockquote>
+<p>NetworkPlugin cni failed to set up pod “” network: failed to set bridge addr: “cni0” already has an IP address different from 10.244.0.1/24</p>
+</blockquote>
+<p>执行 cat /run/flannel/subnet.env 查看 FLANNEL_SUBNET=<strong>10.244.0.1/20</strong><br>执行 ifconfig cni0 查看 inet <strong>10.244.0.1</strong>  netmask <strong>255.255.240.0</strong><br>执行 kubectl describe node al-bj2c-dev.k8smaster-1 | grep -i podcidr 查看 PodCIDR: <strong>10.244.0.0/20</strong><br>这三处掩码长度必须保持一致，且前两处 IP 必须相同，且为第三处网段的第一个可用 IP。<br>所有节点都必须符合这个规律，如果哪个节点有误就重新 kubeadm reset 哪个节点，按前面步骤完整清除配置重建即可。</p>
+<p>如果 flannel 和 coredns 启动没有问题，继续检查 Pods 地址范围是否修改成功。<br>本次重建集群的目的是缩短 PodCIDR 子网掩码长度，以便在同一个 node 上部署超过 256 个服务，执行：<br>kubectl describe node al-bj2c-dev.k8smaster-1 | grep -i podcidr<br>可见 PodCIDR: 10.244.0.0/20，由默认的 24 位掩码已缩短为 20 位。</p>
+<h2 id="Node-节点操作"><a href="#Node-节点操作" class="headerlink" title="Node 节点操作"></a>Node 节点操作</h2><h3 id="Node-节点加入集群"><a href="#Node-节点加入集群" class="headerlink" title="Node 节点加入集群"></a>Node 节点加入集群</h3><p>使用 1.2 的清理命令同样清理好 Node 节点。使用 kubeadm join 重新加入集群即可。</p>
+<hr>
+<p>其他参考文档：</p>
+<ul>
+<li>Flannel 原理<br><a href="https://cloud.tencent.com/developer/article/1096997" target="_blank" rel="noopener">https://cloud.tencent.com/developer/article/1096997</a></li>
+<li>环境安装：<br><a href="https://www.cnblogs.com/hongdada/p/9761336.html" target="_blank" rel="noopener">https://www.cnblogs.com/hongdada/p/9761336.html</a><br><a href="https://kubernetes.feisky.xyz/pai-cuo-zhi-nan/pod" target="_blank" rel="noopener">https://kubernetes.feisky.xyz/pai-cuo-zhi-nan/pod</a></li>
+<li>清理环境：<br><a href="https://stackoverflow.com/questions/41359224/kubernetes-failed-to-setup-network-for-pod-after-executed-kubeadm-reset" target="_blank" rel="noopener">https://stackoverflow.com/questions/41359224/kubernetes-failed-to-setup-network-for-pod-after-executed-kubeadm-reset</a><br><a href="https://www.cnblogs.com/jinanxiaolaohu/p/9019212.html" target="_blank" rel="noopener">https://www.cnblogs.com/jinanxiaolaohu/p/9019212.html</a></li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+      <div class="post-share">分享到：</div>
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/08/30/operation/" rel="next" title="乳腺全切手术术后注意">
+                <i class="fa fa-chevron-left"></i> 乳腺全切手术术后注意
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/10/09/redis/" rel="prev" title="Redis 技术专题">
+                Redis 技术专题 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/card.jpg" alt="John Doe">
+            
+              <p class="site-author-name" itemprop="name">蒲烧鳗鱼饭团</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/lzjohnny" target="_blank" title="GitHub" data-balloon="GitHub" data-balloon-pos="up">
+                    
+                      <i class="fa fa-fw fa-github"></i></a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="https://weibo.com/lzjohnny95" target="_blank" title="Weibo" data-balloon="Weibo" data-balloon-pos="up">
+                    
+                      <i class="fa fa-fw fa-weibo"></i></a>
+                </span>
+              
+            
+          </div>
+
+          
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+            
+
+          </nav>
+
+          
+          
+            <div class="cc-license motion-element" itemprop="license">
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" target="_blank">
+                <img src="/images/cc-by-nc-sa.png" alt="Creative Commons">
+              </a>
+            </div>
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Master-节点操作"><span class="nav-number">1.</span> <span class="nav-text">Master 节点操作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#导出现有配置，以便重新-init-时使用"><span class="nav-number">1.1.</span> <span class="nav-text">导出现有配置，以便重新 init 时使用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#清除原有配置"><span class="nav-number">1.2.</span> <span class="nav-text">清除原有配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#初始化主节点"><span class="nav-number">1.3.</span> <span class="nav-text">初始化主节点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#检查主节点状态、部署网络插件"><span class="nav-number">1.4.</span> <span class="nav-text">检查主节点状态、部署网络插件</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Node-节点操作"><span class="nav-number">2.</span> <span class="nav-text">Node 节点操作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Node-节点加入集群"><span class="nav-number">2.1.</span> <span class="nav-text">Node 节点加入集群</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-image"></div>
+      <div class="footer-inner">
+        <p>博客已萌萌哒运行<span id="since"></span><span class="my-face">(●'◡'●)ﾉ♥</span></p>
+<p></p>
+
+<p>© <span itemprop="copyrightYear">2020</span> Hi, Onigiri.
+    由 <a href="https://hexo.io/" target="_blank" class="external" rel="nofollow">Hexo</a> 强力驱动.
+    Theme By <a href="https://github.com/DIYgod/hexo-theme-sagiri" target="_blank" class="external" rel="nofollow">Sagiri</a>
+</p>
+<p>Made with <i class="fa fa-heart throb" style="color: #d43f57;"></i> by <span class="author" itemprop="copyrightHolder">蒲烧鳗鱼饭团</span></p>
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    <canvas id="evanyou"></canvas>
+
+    
+
+  </div>
+
+  <script type="text/javascript" src="/js/sagiri.min.js?v=0.0.5"></script>
+
+  
+
+
+
+
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+
+
+
+
+<html class="theme-next pisces" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link href="https://cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+
+    
+  
+
+  
+    
+    
+    <link href="//fonts.cat.net/css?family=Sigmar One:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+  
+
+<link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.css" rel="stylesheet" type="text/css">
+
+
+
+  
+
+<link href="https://cdn.bootcss.com/social-share.js/1.0.9/css/share.min.css" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=0.0.5" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=0.0.5">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico?v=0.0.5">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=0.0.5" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="blog,php,back-end">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="一、对于几种类型SQL索引应用的理解和分析1. 单个字段的筛选和排序：(1) SQL： 1SELECT * FROM `table` WHERE `a` &amp;gt; 12 ORDER BY `a`;  索引建立方式：(`a`) 解释：为 a 建立索引后，该索引上的数据即按照 a 顺序排列，只需做一次查找找到 a=12 的数据，再顺序继续遍历即可找到所有满足 where 条件的数据，这样避免了全表扫描">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL索引应用总结">
+<meta property="og:url" content="http://yoursite.com/2019/02/16/mysql-index/index.html">
+<meta property="og:site_name" content="Hi, Onigiri">
+<meta property="og:description" content="一、对于几种类型SQL索引应用的理解和分析1. 单个字段的筛选和排序：(1) SQL： 1SELECT * FROM `table` WHERE `a` &amp;gt; 12 ORDER BY `a`;  索引建立方式：(`a`) 解释：为 a 建立索引后，该索引上的数据即按照 a 顺序排列，只需做一次查找找到 a=12 的数据，再顺序继续遍历即可找到所有满足 where 条件的数据，这样避免了全表扫描">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2020-04-14T16:21:41.327Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MySQL索引应用总结">
+<meta name="twitter:description" content="一、对于几种类型SQL索引应用的理解和分析1. 单个字段的筛选和排序：(1) SQL： 1SELECT * FROM `table` WHERE `a` &amp;gt; 12 ORDER BY `a`;  索引建立方式：(`a`) 解释：为 a 建立索引后，该索引上的数据即按照 a 顺序排列，只需做一次查找找到 a=12 的数据，再顺序继续遍历即可找到所有满足 where 条件的数据，这样避免了全表扫描">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '0.0.5',
+    sidebar: {"position":"right","display":"always","offset":52,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    since: '1/20/2019 11:30:00',
+    onlineAPI: '',
+    googleAnalytics: '',
+    site: {
+      title: 'Hi, Onigiri',
+      subtitle: '',
+      author: 'John Doe'
+    },
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    leancloud: {
+      enable: false,
+      appID: '',
+      appKey: ''
+    },
+    favicon: {
+      visibilitychange: false,
+      narmal: '/images/favicon.ico',
+      hidden: '/images/failure.ico',
+      show_text: '(/≧▽≦/)咦！又好了！',
+      hide_text: '(●—●)喔哟，崩溃啦！'
+    }
+  };
+</script>
+
+
+
+  
+    <script type="text/javascript" src="https://cdn.bootcss.com/jquery/2.1.3/jquery.min.js"></script>
+
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/02/16/mysql-index/">
+
+
+
+
+
+  <title>MySQL索引应用总结 | Hi, Onigiri</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-links">
+          <a href="/links/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-mars"></i> <br>
+            
+            链接
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-rocket"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+      <li class="menu-item search">
+          <form class="search-form">
+            <input name="keyword" type="text" class="search-input" placeholder="站内搜索">
+            <button type="submit" class="search-submit"><i class="fa fa-search"></i></button>
+          </form>
+      </li>
+      <li class="menu-item online"><span id="online-count">无</span>人在线</li>
+    </ul>
+  
+
+  
+</nav>
+
+<div class="site-brand-wrapper" style="background-image: url(/images/header-newgame.jpg)">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <div class="brand">
+        <span class="logo-line-before"><i></i></span>
+        <div class="site-title">
+          <div id="animate" class="animate">
+            <span>H</span><span>i</span><span>,</span><span> </span><span>O</span><span>n</span><span>i</span><span>g</span><span>i</span><span>r</span><span>i</span>
+          </div>
+          <div id="guide" class="guide">
+            <span>H</span><span>i</span><span>,</span><span> </span><span>O</span><span>n</span><span>i</span><span>g</span><span>i</span><span>r</span><span>i</span>
+          </div>
+        </div>
+        <span class="logo-line-after"><i></i></span>
+      </div>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+<div class="site-master" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-master-avatar" itemprop="image" src="/images/aoba.jpg" alt="John Doe">
+    <h2 class="site-master-description" itemprop="description">
+        <font color="#FF4500">蒲烧鳗鱼饭团</font> <font color="#1E90FF">后端开发萌新</font> <s>动漫博主</s>
+    </h2>
+</div>
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-date">
+			<div class="post-month">02月</div>
+			<div class="post-day">16</div>
+	</div>
+  
+
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/02/16/mysql-index/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="John Doe">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/aoba.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hi, Onigiri">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">MySQL索引应用总结</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-16T01:43:18+08:00">
+                2019-02-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="一、对于几种类型SQL索引应用的理解和分析"><a href="#一、对于几种类型SQL索引应用的理解和分析" class="headerlink" title="一、对于几种类型SQL索引应用的理解和分析"></a>一、对于几种类型SQL索引应用的理解和分析</h2><h5 id="1-单个字段的筛选和排序："><a href="#1-单个字段的筛选和排序：" class="headerlink" title="1. 单个字段的筛选和排序："></a>1. 单个字段的筛选和排序：</h5><p>(1) SQL：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> <span class="string">`table`</span> <span class="keyword">WHERE</span> <span class="string">`a`</span> &gt; <span class="number">12</span> <span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="string">`a`</span>;</span><br></pre></td></tr></table></figure>
+
+<p>索引建立方式：(`a`)</p>
+<p>解释：为 a 建立索引后，该索引上的数据即按照 a 顺序排列，只需做一次查找找到 a=12 的数据，再顺序继续遍历即可找到所有满足 where 条件的数据，这样避免了全表扫描。同时可以发现，这些数据刚好也是按照 a 列排序好的，也避免了再次排序。</p>
+<table>
+<thead>
+<tr>
+<th>主键ID</th>
+<th>索引列A</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>10</td>
+</tr>
+<tr>
+<td>5</td>
+<td>11</td>
+</tr>
+<tr>
+<td>3</td>
+<td>12</td>
+</tr>
+<tr>
+<td>2</td>
+<td>13</td>
+</tr>
+</tbody></table>
+<p>结论：若筛选和排序都是同一个字段，不管等值和非等值都可以用到索引</p>
+<h5 id="2-多个字段等值筛选"><a href="#2-多个字段等值筛选" class="headerlink" title="2. 多个字段等值筛选"></a>2. 多个字段等值筛选</h5><p>(1) SQL：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> <span class="string">`table`</span> <span class="keyword">WHERE</span> <span class="string">`a`</span> = <span class="number">10</span> <span class="keyword">and</span> <span class="string">`b`</span> = <span class="number">20</span> <span class="keyword">and</span> <span class="string">`c`</span> = <span class="number">30</span>;</span><br></pre></td></tr></table></figure>
+
+<p>索引建立方式：(`a`, `b`, `c`)建立联合索引，且<strong>区分度高的字段放在前面</strong><br>（区分度：不重复的值数量/总行数，unique字段的区分度最高为1，性别、状态等字段通常区分度较低）</p>
+<h5 id="3-多个字段范围筛选"><a href="#3-多个字段范围筛选" class="headerlink" title="3. 多个字段范围筛选"></a>3. 多个字段范围筛选</h5><p>(1) SQL：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> <span class="string">`table`</span> <span class="keyword">WHERE</span> <span class="string">`a`</span> = <span class="number">10</span> <span class="keyword">and</span> <span class="string">`b`</span> &gt; <span class="number">10</span>;</span><br></pre></td></tr></table></figure>
+
+<p>索引建立方式：(`a`, `b`)</p>
+<p>(2) SQL：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> <span class="string">`table`</span> <span class="keyword">WHERE</span> <span class="string">`a`</span> <span class="keyword">IN</span> (<span class="number">10</span>,<span class="number">11</span>,<span class="number">12</span>) <span class="keyword">and</span> <span class="string">`b`</span> &gt; <span class="number">10</span>;</span><br></pre></td></tr></table></figure>
+
+<p>索引建立方式：(`a`, `b`)</p>
+<p>(3) SQL：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> <span class="string">`table`</span> <span class="keyword">WHERE</span> <span class="string">`a`</span> &gt; <span class="string">'10'</span> <span class="keyword">and</span> <span class="string">`b`</span> = <span class="string">'10'</span>;</span><br></pre></td></tr></table></figure>
+
+<p>索引建立方式：(`b`, `a`)</p>
+<p>(4) SQL：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> <span class="string">`table`</span> <span class="keyword">WHERE</span> <span class="string">`a`</span> &gt; <span class="string">'10'</span> <span class="keyword">and</span> <span class="string">`b`</span> = <span class="string">'10'</span> <span class="keyword">and</span> <span class="string">`c`</span> &gt; <span class="string">'10'</span>;</span><br></pre></td></tr></table></figure>
+
+<p>索引建立方式：(`b`, `a`) 或 (`b`, `c`)</p>
+<p>解释：<br>(1) (2) <strong>范围条件（&gt; &lt; between）及之前的等值条件可使用索引，但是范围之后的条件无法使用索引</strong><br>（另外 in 属于特殊情况，in 在此处可被优化为等值条件，不会中止剩余索引的使用）<br>(3) and 条件的前后顺序可被自动优化，从而尽可能多的使用索引<br>(4) 根据上面两条，b 为等值条件，顺序会被调整到首位，a 和 c 属于范围条件，之后的条件无法使用索引，只能使用一个作为索引</p>
+<h5 id="4-多个字段等值筛选加排序"><a href="#4-多个字段等值筛选加排序" class="headerlink" title="4. 多个字段等值筛选加排序"></a>4. 多个字段等值筛选加排序</h5><p>(1) SQL：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> <span class="string">`table`</span> <span class="keyword">WHERE</span> <span class="string">`a`</span> = <span class="number">10</span> <span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="string">`b`</span>;</span><br></pre></td></tr></table></figure>
+
+<p>索引建立方式：(`a`, `b`)<br>解释：(`a`, `b`) 索引建立后，数据排列如图所示，即数据先按 a 列排序，a 列相同时再按 b 列排序。此时若筛选 a 列等于某个值，只需将数据依次取出，b 列默认有序，这样可以避免再次排序。</p>
+<table>
+<thead>
+<tr>
+<th>主键ID</th>
+<th>索引列a</th>
+<th>索引列b</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>10</td>
+<td>100</td>
+</tr>
+<tr>
+<td>5</td>
+<td>10</td>
+<td>101</td>
+</tr>
+<tr>
+<td>3</td>
+<td>10</td>
+<td>103</td>
+</tr>
+<tr>
+<td>2</td>
+<td>13</td>
+<td>50</td>
+</tr>
+<tr>
+<td>7</td>
+<td>13</td>
+<td>51</td>
+</tr>
+</tbody></table>
+<p>(2) SQL：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> <span class="string">`table`</span> <span class="keyword">WHERE</span> <span class="string">`a`</span> = <span class="number">10</span> <span class="keyword">AND</span> <span class="string">`b`</span> = <span class="number">20</span> <span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="string">`c`</span>;</span><br></pre></td></tr></table></figure>
+
+<p>索引建立方式：<strong>abc、ab、ac、bc 都可以使用到索引！</strong> 一般选 (`a`, `b`, `c`) 建索引比较稳妥，且需要把区分度高的放前面。<br>解释：建立 abc 和 ab 索引时，筛选流程同 4(1)，需要说明一下bc建立索引情况：将 b=20 数据顺序取出，c 列默认有序，但是本次筛选数据不一定满足 a=10，二次筛选一遍仅保留满足 a 条件的数据即可，这样仅需对较小的结果集进行顺序扫描一次，也避免了性能消耗较高的排序。</p>
+<h5 id="5-多个字段范围筛选加排序"><a href="#5-多个字段范围筛选加排序" class="headerlink" title="5. 多个字段范围筛选加排序"></a>5. 多个字段范围筛选加排序</h5><p>(1) SQL：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> <span class="string">`table`</span> <span class="keyword">WHERE</span> <span class="string">`a`</span> &gt; <span class="number">10</span> <span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="string">`b`</span>;</span><br></pre></td></tr></table></figure>
+
+<p>索引建立方式：(`a`)<br>解释：见 4(1) 的图，即使建立 ab 索引，筛选出 a &gt; 10 的数据后，b 也是无序的，必须再次对 b 排序<br>结论：筛选字段和排序字段不同、且筛选条件为非等值条件 <strong>（包括 in）</strong>，order by 的列一定无法应用索引，<strong>无法避免排序</strong>（Using filesort）</p>
+<p>(2) SQL：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> <span class="string">`table`</span> <span class="keyword">WHERE</span> <span class="string">`a`</span> = <span class="number">10</span> <span class="keyword">AND</span> <span class="string">`b`</span> = <span class="number">20</span> <span class="keyword">AND</span> <span class="string">`c`</span> &gt; <span class="number">30</span> <span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="string">`c`</span>;</span><br></pre></td></tr></table></figure>
+
+<p>索引建立方式：(`a`, `b`, `c`) 联合索引，c 排序可以使用索引<br>解释：同 1(1)，筛选和排序都是同一个字段，按 ab 筛选后，c 都是有序的，只需过滤 &gt;30 的值，不需要再次排序</p>
+<p>(3) SQL：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> <span class="string">`table`</span> <span class="keyword">WHERE</span> <span class="string">`a`</span> = <span class="number">10</span> <span class="keyword">AND</span> <span class="string">`b`</span> = <span class="number">10</span> <span class="keyword">AND</span> <span class="string">`c`</span> &gt; <span class="number">20</span> <span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="string">`d`</span>;</span><br></pre></td></tr></table></figure>
+
+<p>索引建立方式：为 (`a`, `b`, `c`) 建立联合索引，d 无法使用索引<br>解释：abc 筛选后是按 c 排序，c 排序 ≠ d 排序，即使建立 abcd 索引，筛选出 c &gt; 20 的数据后，d 也是无序的，必须再次排序</p>
+<p>(4) SQL：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> <span class="string">`table`</span> <span class="keyword">WHERE</span> <span class="string">`a`</span> = <span class="number">10</span> <span class="keyword">AND</span> <span class="string">`b`</span> <span class="keyword">IN</span> (<span class="number">10</span>,<span class="number">20</span>,<span class="number">30</span>) <span class="keyword">AND</span> <span class="string">`c`</span> &gt; <span class="number">40</span> <span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="string">`c`</span>;</span><br></pre></td></tr></table></figure>
+
+<p>索引建立方式：为 (`a`, `b`, `c`) 建立联合索引，筛选可以使用索引，<strong>但排序用不到索引！</strong><br>解释：如 3(2)，IN 虽然属于范围查询，但是不会终止索引使用，abc的筛选都可以使用索引。但是b是非等值查询，会阻止c使用索引排序。注意 3(2) 中的 IN 条件没有中止剩余字段使用索引，而本处阻止了剩余字段使用索引排序。<br>据其他资料，MySQL会将 IN 拆成多个语句，再进行聚合得到结果。如 b=10 时得到的子结果中 c 确实为有序，但和 b=20、b=30 的子结果放在一起，c 不能保证有序，所有还需要再次排序。</p>
+<h2 id="二、执行计划的-Explain-字段说明"><a href="#二、执行计划的-Explain-字段说明" class="headerlink" title="二、执行计划的 Explain 字段说明"></a>二、执行计划的 Explain 字段说明</h2><ul>
+<li>Using index：仅依赖索引即可，不需要回表查询数据（当 select A where A=xx，且 A 为索引/联合索引最左时出现）</li>
+<li>如果同时出现 Using where; Using index 也是依赖索引、不需要回表查询，但由于是范围查询，需要进行过滤。</li>
+</ul>
+<p>（当 select A where A&gt;xx，且 A 为索引/联合索引最左时出现。即使用索引找到数据再使用&gt;条件过滤，所以有 Using where 和 Using index）</p>
+<ul>
+<li>Using index condition：使用索引，但仅靠索引无法得出全部数据，需要进行回表查询（当 select * where A=xx，且 A 为非主索引的索引/联合索引最左时出现）</li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+      <div class="post-share">分享到：</div>
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/06/web-trouble-shooting/" rel="next" title="Nginx 与网站问题排查">
+                <i class="fa fa-chevron-left"></i> Nginx 与网站问题排查
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/04/01/database-migration/" rel="prev" title="数据库拆分迁移">
+                数据库拆分迁移 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/card.jpg" alt="John Doe">
+            
+              <p class="site-author-name" itemprop="name">蒲烧鳗鱼饭团</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <div class="links-of-author motion-element">
+            
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/lzjohnny" target="_blank" title="GitHub" data-balloon="GitHub" data-balloon-pos="up">
+                    
+                      <i class="fa fa-fw fa-github"></i></a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  <a href="https://weibo.com/lzjohnny95" target="_blank" title="Weibo" data-balloon="Weibo" data-balloon-pos="up">
+                    
+                      <i class="fa fa-fw fa-weibo"></i></a>
+                </span>
+              
+            
+          </div>
+
+          
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+            
+
+          </nav>
+
+          
+          
+            <div class="cc-license motion-element" itemprop="license">
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" target="_blank">
+                <img src="/images/cc-by-nc-sa.png" alt="Creative Commons">
+              </a>
+            </div>
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#一、对于几种类型SQL索引应用的理解和分析"><span class="nav-number">1.</span> <span class="nav-text">一、对于几种类型SQL索引应用的理解和分析</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#1-单个字段的筛选和排序："><span class="nav-number">1.0.0.1.</span> <span class="nav-text">1. 单个字段的筛选和排序：</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#2-多个字段等值筛选"><span class="nav-number">1.0.0.2.</span> <span class="nav-text">2. 多个字段等值筛选</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#3-多个字段范围筛选"><span class="nav-number">1.0.0.3.</span> <span class="nav-text">3. 多个字段范围筛选</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#4-多个字段等值筛选加排序"><span class="nav-number">1.0.0.4.</span> <span class="nav-text">4. 多个字段等值筛选加排序</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#5-多个字段范围筛选加排序"><span class="nav-number">1.0.0.5.</span> <span class="nav-text">5. 多个字段范围筛选加排序</span></a></li></ol></li></ol><li class="nav-item nav-level-2"><a class="nav-link" href="#二、执行计划的-Explain-字段说明"><span class="nav-number">2.</span> <span class="nav-text">二、执行计划的 Explain 字段说明</span></a></li></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-image"></div>
+      <div class="footer-inner">
+        <p>博客已萌萌哒运行<span id="since"></span><span class="my-face">(●'◡'●)ﾉ♥</span></p>
+<p></p>
+
+<p>© <span itemprop="copyrightYear">2020</span> Hi, Onigiri.
+    由 <a href="https://hexo.io/" target="_blank" class="external" rel="nofollow">Hexo</a> 强力驱动.
+    Theme By <a href="https://github.com/DIYgod/hexo-theme-sagiri" target="_blank" class="external" rel="nofollow">Sagiri</a>
+</p>
+<p>Made with <i class="fa fa-heart throb" style="color: #d43f57;"></i> by <span class="author" itemprop="copyrightHolder">蒲烧鳗鱼饭团</span></p>
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    <canvas id="evanyou"></canvas>
+
+    
+
+  </div>
+
+  <script type="text/javascript" src="/js/sagiri.min.js?v=0.0.5"></script>
+
+  
+
+
+
+
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
